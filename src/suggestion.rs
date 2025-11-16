@@ -1,4 +1,4 @@
-use crate::parser::TsError;
+use crate::parser::{CommonErrors, TsError};
 
 pub trait Suggest {
     fn build(err: &TsError) -> Option<String>;
@@ -8,12 +8,16 @@ pub struct Suggestion;
 
 impl Suggest for Suggestion {
     fn build(err: &TsError) -> Option<String> {
-        let suggestion = match err.code.as_str() {
-            "TS2322" => type_mismatch(err),
-            "TS2554" => Some(
+        let suggestion = match err.code {
+            CommonErrors::TypeMismatch => type_mismatch(err),
+            CommonErrors::MissingParameters => Some(
                 "Check if all required parameters are provided in the function call.".to_string(),
             ),
-            _ => None,
+            CommonErrors::NoImplicitAny => Some(
+                "Consider adding explicit type annotations to avoid implicit `any` types."
+                    .to_string(),
+            ),
+            CommonErrors::Unsupported(_) => None,
         };
         suggestion
     }

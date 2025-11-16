@@ -5,27 +5,51 @@ pub struct TsError {
     pub file: String,
     pub line: usize,
     pub column: usize,
-    pub code: String,
+    pub code: CommonErrors,
     pub message: String,
 }
 
-/// for now only supprts the following:
-/// src/index.ts:10:5 - error TS2322: Type 'string' is not assignable to type 'number'.
-/// this will also be our initial test case
-pub fn parse(line: &str) -> Option<TsError> {
-    // Matches: index.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
-    let re = Regex::new(
-        r#"^(?P<file>[^\(]+)\((?P<line>\d+),(?P<col>\d+)\): error (?P<code>TS\d+): (?P<msg>.*)$"#,
-    )
-    .ok()?;
+#[derive(Debug, Clone)]
+pub enum CommonErrors {
+    TypeMismatch,
+    MissingParameters,
+    NoImplicitAny,
+    Unsupported(String),
+}
 
-    let caps = re.captures(line)?;
+impl std::fmt::Display for CommonErrors {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CommonErrors::TypeMismatch => write!(f, "TS2322"),
+            CommonErrors::MissingParameters => write!(f, "TS2554"),
+            CommonErrors::NoImplicitAny => write!(f, "TS7006"),
+            CommonErrors::Unsupported(code) => write!(f, "{}", code),
+        }
+    }
+}
+
+impl CommonErrors {
+    pub fn from_code(code: &str) -> CommonErrors {
+        match code {
+            "TS2322" => CommonErrors::TypeMismatch,
+            "TS2554" => CommonErrors::MissingParameters,
+            "TS7006" | "TS7044" => CommonErrors::NoImplicitAny,
+            other => CommonErrors::Unsupported(other.to_string()),
+        }
+    }
+}
+
+pub fn parse(line: &str) -> Option<TsError> {
+    let (file, rest) = line.split_once('(')?;
+    let (coords, rest) = rest.split_once("): error ")?;
+    let (line_s, col_s) = coords.split_once(',')?;
+    let (code, msg) = rest.split_once(": ")?;
 
     Some(TsError {
-        file: caps.name("file")?.as_str().to_string(),
-        line: caps.name("line")?.as_str().parse().ok()?,
-        column: caps.name("col")?.as_str().parse().ok()?,
-        code: caps.name("code")?.as_str().to_string(),
-        message: caps.name("msg")?.as_str().to_string(),
+        file: file.to_string(),
+        line: usize::from_str_radix(line_s, 10).ok()?,
+        column: usize::from_str_radix(col_s, 10).ok()?,
+        code: CommonErrors::from_code(code),
+        message: msg.to_string(),
     })
 }

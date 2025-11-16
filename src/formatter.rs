@@ -1,3 +1,4 @@
+use crate::parser::CommonErrors;
 use crate::suggestion::Suggestion;
 use crate::{parser::TsError, suggestion::Suggest};
 use ariadne::{Color, Label, Report, ReportKind, Source};
@@ -71,6 +72,7 @@ fn tokenize_name(err: &TsError, src: &str) -> std::ops::Range<usize> {
 /// Simple formatting without src extraction
 pub fn fmt_simple(err: &TsError) -> String {
     let mut out = String::new();
+    let code_str = CommonErrors::from_code(&err.code.to_string());
 
     out.push_str(&format!(
         "{}:{}:{} - {} {}: {}\n",
@@ -78,7 +80,7 @@ pub fn fmt_simple(err: &TsError) -> String {
         err.line.to_string().yellow(),
         err.column.to_string().yellow(),
         "error".red().bold(),
-        err.code.red().bold(),
+        code_str.to_string().red().bold(),
         err.message
     ));
 
