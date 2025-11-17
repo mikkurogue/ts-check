@@ -72,15 +72,15 @@ fn main() -> Result<()> {
             counter += 1;
 
             // Collect continuation lines (indented lines following the error)
-            let mut j = i + 1;
-            while j < lines.len() && lines[j].starts_with("  ") {
+            let mut indented_line = i + 1;
+            while indented_line < lines.len() && lines[indented_line].starts_with("  ") {
                 parsed.message.push('\n');
-                parsed.message.push_str(lines[j].trim());
-                j += 1;
+                parsed.message.push_str(lines[indented_line].trim());
+                indented_line += 1;
             }
 
             println!("{}", formatter::fmt(&parsed));
-            i = j;
+            i = indented_line;
         } else {
             i += 1;
         }

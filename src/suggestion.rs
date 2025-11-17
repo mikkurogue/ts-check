@@ -15,6 +15,7 @@ pub struct Suggestion {
 }
 
 impl Suggest for Suggestion {
+    /// Build a suggestion and help text for the given TsError
     fn build(err: &TsError, tokens: &[Token]) -> Option<Self> {
         match err.code {
             CommonErrors::TypeMismatch => Some(Self {
