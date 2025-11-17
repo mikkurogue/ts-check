@@ -235,7 +235,7 @@ fn parse_ts2322_error(msg: &str) -> Option<(String, String)> {
 
 fn parse_property_missing_error(msg: &str) -> Option<String> {
     let type_marker = "type '";
-    if let Some(start_index) = msg.find(type_marker) {
+    if let Some(start_index) = msg.rfind(type_marker) {
         let rest_of_msg = &msg[start_index + type_marker.len()..];
         if let Some(end_index) = rest_of_msg.find('\'') {
             return Some(rest_of_msg[..end_index].to_string());
