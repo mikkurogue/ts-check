@@ -23,7 +23,18 @@ pub fn fmt(err: &TsError) -> String {
         .with_label(
             Label::new((&err.file, span))
                 .with_color(Color::Red)
-                .with_message(suggestion.unwrap_or_else(|| "Error found here ".to_string())),
+                .with_message(
+                    suggestion
+                        .as_ref()
+                        .and_then(|s| s.suggestion.clone())
+                        .unwrap_or_else(|| "Error found here ".to_string()),
+                ),
+        )
+        .with_help(
+            suggestion
+                .as_ref()
+                .and_then(|s| s.help.clone())
+                .unwrap_or_else(|| "No suggestion available.".to_string()),
         )
         .finish()
         .write((&err.file, Source::from(src)), &mut buf)

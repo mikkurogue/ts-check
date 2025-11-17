@@ -1,36 +1,72 @@
 use crate::parser::{CommonErrors, TsError};
 
 pub trait Suggest {
-    fn build(err: &TsError) -> Option<String>;
+    fn build(err: &TsError) -> Option<Self>
+    where
+        Self: Sized;
 }
 
-pub struct Suggestion;
+pub struct Suggestion {
+    pub suggestion: Option<String>,
+    pub help: Option<String>,
+}
 
 impl Suggest for Suggestion {
-    fn build(err: &TsError) -> Option<String> {
+    fn build(err: &TsError) -> Option<Self> {
         let suggestion = match err.code {
-            CommonErrors::TypeMismatch => type_mismatch(err),
-            CommonErrors::MissingParameters => Some(
+            CommonErrors::TypeMismatch => {
+               Some(Self {
+                    suggestion: type_mismatch(err),
+                    help: Some("Ensure that the types are compatible or perform an explicit conversion.".to_string()),
+                }) 
+            },
+            CommonErrors::MissingParameters => {
+               Some(Self {
+                    suggestion: Some(
                 "Check if all required parameters are provided in the function call.".to_string(),
             ),
-            CommonErrors::NoImplicitAny => Some(
+                    help: Some("Refer to the function signature to see the required parameters.".to_string()),
+                }) 
+            },
+            CommonErrors::NoImplicitAny => {
+               Some(Self {
+                    suggestion:Some(
                 "Consider adding explicit type annotations to avoid implicit `any` types."
                     .to_string(),
             ),
-            CommonErrors::PropertyMissingInType => Some(
+                    help: Some("Consider adding type annotations to avoid implicit 'any' types.".to_string()),
+                }) 
+            },
+
+            CommonErrors::PropertyMissingInType => {
+               Some(Self {
+                    suggestion:  Some(
                 "Verify that the object structure includes all required members of the specified type."
                     .to_string(),
             ),
-            CommonErrors::UnintentionalComparison => Some(
+                    help: Some("Ensure the object has all required properties defined in the type.".to_string()),
+                }) 
+            },
+            CommonErrors::UnintentionalComparison => {
+               Some(Self {
+                    suggestion:
+                    Some(
                 "Impossible to compare as left side value is narrowed to a single value."
                     .to_string(),
             ),
-            CommonErrors::Unsupported(_) => None,
+                    help: Some("Review the comparison logic to ensure it makes sense.".to_string()),
+                }) 
+            },
+            CommonErrors::Unsupported(_) => {
+                None
+            },
         };
+
         suggestion
     }
 }
 
+/// Suggestion for the type mismatch error
 fn type_mismatch(err: &TsError) -> Option<String> {
     if let Some((from, to)) = parse_ts2322_error(&err.message) {
         Some(format!(
