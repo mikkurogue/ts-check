@@ -5,6 +5,7 @@ use colored::*;
 mod formatter;
 mod parser;
 mod suggestion;
+mod tokenizer;
 
 #[derive(Parser)]
 struct Cli {
