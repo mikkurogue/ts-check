@@ -12,6 +12,8 @@ pub enum CommonErrors {
     TypeMismatch,
     MissingParameters,
     NoImplicitAny,
+    PropertyMissingInType,
+    UnintentionalComparison,
     Unsupported(String),
 }
 
@@ -21,6 +23,8 @@ impl std::fmt::Display for CommonErrors {
             CommonErrors::TypeMismatch => write!(f, "TS2322"),
             CommonErrors::MissingParameters => write!(f, "TS2554"),
             CommonErrors::NoImplicitAny => write!(f, "TS7006"),
+            CommonErrors::PropertyMissingInType => write!(f, "TS2741"),
+            CommonErrors::UnintentionalComparison => write!(f, "TS2367"),
             CommonErrors::Unsupported(code) => write!(f, "{}", code),
         }
     }
@@ -32,6 +36,8 @@ impl CommonErrors {
             "TS2322" => CommonErrors::TypeMismatch,
             "TS2554" => CommonErrors::MissingParameters,
             "TS7006" | "TS7044" => CommonErrors::NoImplicitAny,
+            "TS2741" => CommonErrors::PropertyMissingInType,
+            "TS2367" => CommonErrors::UnintentionalComparison,
             other => CommonErrors::Unsupported(other.to_string()),
         }
     }

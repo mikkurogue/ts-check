@@ -8,12 +8,7 @@ function greet(name: string): string {
 // we exect ts error ts2554 here
 console.log(greet());
 
-// we expect ts 7044 here - not yet supported
+// we expect ts 7066 here - not yet supported
 function testAny(value) {
 	return value;
 }
-
-// we expect ts error ts7006 here
-const implicitAny = (param) => {
-	return param;
-};

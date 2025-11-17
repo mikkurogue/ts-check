@@ -1,5 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
+use colored::*;
 
 mod formatter;
 mod parser;
@@ -36,23 +37,40 @@ fn main() -> Result<()> {
             String::from_utf8_lossy(&output.stderr)
         );
     } else {
-        // For now we can just return a rust error as we need an input file for now
-        // we can later make sure we can check stdin for things like "no tsconfig" etc
-        return Err(anyhow::anyhow!(
-            "No input file provided. Please provide a TypeScript file as an argument."
-        ));
+        let output = std::process::Command::new("tsc")
+            .args([
+                "--pretty",
+                "false",
+                "--diagnostics",
+                "--extendedDiagnostics",
+                "--noEmit",
+                "--preserveWatchOutput",
+                "false",
+            ])
+            .output()?;
+        buf = format!(
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
     }
 
     let mut found_error = false;
+    let mut counter: usize = 0;
     for line in buf.lines() {
         if let Some(parsed) = parser::parse(line) {
             found_error = true;
+            counter += 1;
             println!("{}", formatter::fmt(&parsed));
         }
     }
     if !found_error {
         println!("No errors were emitted.");
     }
+
+    let counter_str = counter.to_string();
+
+    println!("\nTotal errors: {}", counter_str.red().bold());
 
     Ok(())
 }

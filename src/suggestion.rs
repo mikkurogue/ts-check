@@ -17,6 +17,14 @@ impl Suggest for Suggestion {
                 "Consider adding explicit type annotations to avoid implicit `any` types."
                     .to_string(),
             ),
+            CommonErrors::PropertyMissingInType => Some(
+                "Verify that the object structure includes all required members of the specified type."
+                    .to_string(),
+            ),
+            CommonErrors::UnintentionalComparison => Some(
+                "Impossible to compare as left side value is narrowed to a single value."
+                    .to_string(),
+            ),
             CommonErrors::Unsupported(_) => None,
         };
         suggestion

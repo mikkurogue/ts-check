@@ -73,7 +73,7 @@ fn tokenize_name(err: &TsError, src: &str) -> std::ops::Range<usize> {
 }
 
 /// Simple formatting without src extraction
-pub fn fmt_simple(err: &TsError) -> String {
+fn fmt_simple(err: &TsError) -> String {
     let mut out = String::new();
     let code_str = CommonErrors::from_code(&err.code.to_string());
 
