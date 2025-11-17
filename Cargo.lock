@@ -276,7 +276,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ts-check"
+name = "ts-analyzer"
 version = "0.1.0"
 dependencies = [
  "anyhow",
