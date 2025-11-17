@@ -64,7 +64,7 @@ impl Tokenizer {
             if self
                 .src
                 .get(self.position..)
-                .map_or(false, |s| s.starts_with("//"))
+                .is_some_and(|s| s.starts_with("//"))
             {
                 while let Some(c) = self.src.get(self.position..).and_then(|s| s.chars().next()) {
                     self.position += c.len_utf8();
@@ -98,7 +98,7 @@ impl Tokenizer {
     fn read_number(&mut self) -> String {
         let start = self.position;
         while let Some(c) = self.src.get(self.position..).and_then(|s| s.chars().next()) {
-            if c.is_digit(10) || c == '.' {
+            if c.is_ascii_digit() || c == '.' {
                 self.position += c.len_utf8();
                 self.column += 1;
             } else {
@@ -194,7 +194,7 @@ impl Tokenizer {
                     kind = TokenKind::Identifier;
                 }
             }
-            c if c.is_digit(10) => {
+            c if c.is_ascii_digit() => {
                 self.read_number();
                 kind = TokenKind::Literal;
             }

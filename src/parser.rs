@@ -10,6 +10,7 @@ pub struct TsError {
 #[derive(Debug, Clone)]
 pub enum CommonErrors {
     TypeMismatch,
+    InlineTypeMismatch,
     MissingParameters,
     NoImplicitAny,
     PropertyMissingInType,
@@ -21,6 +22,7 @@ impl std::fmt::Display for CommonErrors {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             CommonErrors::TypeMismatch => write!(f, "TS2322"),
+            CommonErrors::InlineTypeMismatch => write!(f, "TS2345"),
             CommonErrors::MissingParameters => write!(f, "TS2554"),
             CommonErrors::NoImplicitAny => write!(f, "TS7006"),
             CommonErrors::PropertyMissingInType => write!(f, "TS2741"),
@@ -34,6 +36,7 @@ impl CommonErrors {
     pub fn from_code(code: &str) -> CommonErrors {
         match code {
             "TS2322" => CommonErrors::TypeMismatch,
+            "TS2345" => CommonErrors::InlineTypeMismatch,
             "TS2554" => CommonErrors::MissingParameters,
             "TS7006" | "TS7044" => CommonErrors::NoImplicitAny,
             "TS2741" => CommonErrors::PropertyMissingInType,

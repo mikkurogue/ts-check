@@ -63,12 +63,26 @@ fn main() -> Result<()> {
 
     let mut found_error = false;
     let mut counter: usize = 0;
+    let lines: Vec<&str> = buf.lines().collect();
+    let mut i = 0;
 
-    for line in buf.lines() {
-        if let Some(parsed) = parser::parse(line) {
+    while i < lines.len() {
+        if let Some(mut parsed) = parser::parse(lines[i]) {
             found_error = true;
             counter += 1;
+
+            // Collect continuation lines (indented lines following the error)
+            let mut j = i + 1;
+            while j < lines.len() && lines[j].starts_with("  ") {
+                parsed.message.push('\n');
+                parsed.message.push_str(lines[j].trim());
+                j += 1;
+            }
+
             println!("{}", formatter::fmt(&parsed));
+            i = j;
+        } else {
+            i += 1;
         }
     }
     if !found_error {

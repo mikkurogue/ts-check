@@ -29,19 +29,41 @@ pub fn fmt(err: &TsError) -> String {
 
     let mut buf = Vec::new();
 
-    Report::build(ReportKind::Error, (&err.file, span.clone()))
-        .with_code(&err.code)
-        .with_message(&err.message)
-        .with_label(
+    let mut report =
+        Report::build(ReportKind::Error, (&err.file, span.clone())).with_code(&err.code);
+    // .with_message(&err.message);
+
+    if let Some(ref s) = suggestion {
+        if let Some(ref suggestions) = s.suggestions {
+            for suggestion_text in suggestions.iter() {
+                report = report.with_label(
+                    Label::new((&err.file, span.clone()))
+                        .with_color(Color::Red)
+                        .with_message(suggestion_text),
+                );
+            }
+        } else if let Some(ref suggestion_text) = s.suggestion {
+            report = report.with_label(
+                Label::new((&err.file, span.clone()))
+                    .with_color(Color::Red)
+                    .with_message(suggestion_text),
+            );
+        } else {
+            report = report.with_label(
+                Label::new((&err.file, span.clone()))
+                    .with_color(Color::Red)
+                    .with_message("Error found here ".to_string()),
+            );
+        }
+    } else {
+        report = report.with_label(
             Label::new((&err.file, span))
                 .with_color(Color::Red)
-                .with_message(
-                    suggestion
-                        .as_ref()
-                        .and_then(|s| s.suggestion.clone())
-                        .unwrap_or_else(|| "Error found here ".to_string()),
-                ),
-        )
+                .with_message("Error found here ".to_string()),
+        );
+    }
+
+    report
         .with_help(
             suggestion
                 .as_ref()
