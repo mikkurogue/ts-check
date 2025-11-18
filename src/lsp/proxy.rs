@@ -102,6 +102,9 @@ impl LspProxy {
                 loop {
                     match read_lsp_message(&mut reader).await {
                         Ok(Some(body)) => {
+                            lsp_client
+                                .log_message(MessageType::INFO, "[PROXY] Received message from downstream".to_string())
+                                .await;
                             if let Ok(json) = serde_json::from_str::<Value>(&body) {
                                 // Check if it's a publishDiagnostics notification
                                 if json.get("method")
@@ -113,34 +116,46 @@ impl LspProxy {
                                         .log_message(MessageType::INFO, "Intercepted diagnostics!")
                                         .await;
 
-                                    if let Ok(params) =
+                                     if let Ok(params) = 
                                         serde_json::from_value::<PublishDiagnosticsParams>(
                                             json["params"].clone(),
                                         )
                                     {
-                                        // Initialize a dummy TsError for testing
-                                        let dummy_error = crate::parser::TsError {
-                                            file: params.uri.path().to_string(),
-                                            line: 1,
-                                            column: 1,
-                                            code: crate::parser::CommonErrors::Unsupported(
-                                                "TS-DUMMY".to_string(),
-                                            ),
-                                            message:
-                                                "This is a dummy error for testing the formatter."
-                                                    .to_string(),
-                                        };
-
-                                        // Format the dummy error
-                                        let formatted_error = crate::formatter::fmt(&dummy_error);
-
-                                        // Log the formatted error to the client
+                                        // Add a general log to confirm we are intercepting diagnostics
                                         lsp_client
                                             .log_message(
                                                 MessageType::INFO,
-                                                format!("Formatted Error: {}", formatted_error),
+                                                format!("Intercepted {} diagnostics for {}", params.diagnostics.len(), params.uri),
                                             )
                                             .await;
+
+                                        for diagnostic in &params.diagnostics {
+                                            let is_ts2322 = if let Some(code) = &diagnostic.code {
+                                                match code {
+                                                    tower_lsp::lsp_types::NumberOrString::Number(num) => *num == 2322,
+                                                    tower_lsp::lsp_types::NumberOrString::String(s) => s == "2322",
+                                                }
+                                            } else {
+                                                false
+                                            };
+
+                                            if is_ts2322 {
+                                                let ts_error = crate::parser::TsError {
+                                                    file: params.uri.path().to_string(),
+                                                    line: diagnostic.range.start.line as usize + 1,
+                                                    column: diagnostic.range.start.character as usize + 1,
+                                                    code: crate::parser::CommonErrors::TypeMismatch,
+                                                    message: diagnostic.message.clone(),
+                                                };
+                                                let formatted_error = crate::formatter::fmt(&ts_error);
+                                                lsp_client
+                                                    .log_message(
+                                                        MessageType::INFO,
+                                                        format!("Formatted Error: {}", formatted_error),
+                                                    )
+                                                    .await;
+                                            }
+                                        }
 
                                         // We still forward the original diagnostics for now
                                         lsp_client
@@ -225,6 +240,12 @@ impl LanguageServer for Backend {
 
     // Forward notifications from the client to the downstream server.
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
+        self.client
+            .log_message(
+                MessageType::INFO,
+                format!("[PROXY] Forwarding didOpen for {}", params.text_document.uri),
+            )
+            .await;
         self.forward_notification("textDocument/didOpen", params)
             .await;
     }

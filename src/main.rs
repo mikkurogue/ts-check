@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use colored::*;
 
-use crate::lsp::proxy;
+
 
 mod formatter;
 mod lsp;
@@ -27,7 +27,7 @@ enum Commands {
     /// Starts the TypeScript Analyzer LSP proxy.
     Lsp {
         /// Specify which underlying LSP server to use.
-        #[arg(long, value_enum, default_value_t = LspServer::Vtsls)]
+        #[arg(long, value_enum, default_value_t = LspServer::TsServer)]
         server: LspServer,
     },
 }
