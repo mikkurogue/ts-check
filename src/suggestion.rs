@@ -1,4 +1,9 @@
+use crate::message_parser::{
+    extract_first_quoted, extract_quoted_value, extract_second_quoted, extract_third_quoted,
+    parse_property_missing_error, parse_ts2322_error, parse_ts2345_error,
+};
 use crate::parser::{CommonErrors, TsError};
+use crate::token_utils::{extract_function_name, extract_identifier_or_default};
 use crate::tokenizer::Token;
 use colored::*;
 
@@ -33,9 +38,70 @@ impl SuggestionHandler for TypeMismatchHandler {
 struct InlineTypeMismatchHandler;
 impl SuggestionHandler for InlineTypeMismatchHandler {
     fn handle(&self, err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+        // Check if this is a callback signature mismatch (too many/few parameters)
+        if err
+            .message
+            .contains("Target signature provides too few arguments")
+        {
+            // Parse: "Expected X or more, but got Y"
+            let (expected, got) = if let Some(expected_str) = err.message.split("Expected ").nth(1)
+            {
+                let expected_num = expected_str
+                    .split(" or more")
+                    .next()
+                    .and_then(|s| s.trim().parse::<u32>().ok())
+                    .unwrap_or(0);
+                let got_num = expected_str
+                    .split("but got ")
+                    .nth(1)
+                    .and_then(|s| s.split('.').next())
+                    .and_then(|s| s.trim().parse::<u32>().ok())
+                    .unwrap_or(0);
+                (expected_num, got_num)
+            } else {
+                (0, 0)
+            };
+
+            let suggestion = if expected > 0 && got > 0 {
+                format!(
+                    "The callback function has {} parameters, but the signature only accepts {}.",
+                    expected, got
+                )
+            } else {
+                "The callback function has too many parameters for the expected signature."
+                    .to_string()
+            };
+
+            return Some(Suggestion {
+                suggestions: vec![suggestion],
+                help: Some(
+                    "Remove the extra parameters from the callback function to match the expected signature.".to_string()
+                ),
+            });
+        }
+
+        if err
+            .message
+            .contains("Target signature provides too many arguments")
+        {
+            let suggestion =
+                "The callback function has too few parameters for the expected signature."
+                    .to_string();
+
+            return Some(Suggestion {
+                suggestions: vec![suggestion],
+                help: Some(
+                    "Add the missing parameters to the callback function to match the expected signature.".to_string()
+                ),
+            });
+        }
+
+        // Otherwise, try to parse object property mismatches
         let suggestions = inline_type_mismatch_2345(err);
         Some(Suggestion {
-            suggestions: suggestions.unwrap_or_default(),
+            suggestions: suggestions.unwrap_or_else(|| {
+                vec!["Argument type does not match the expected parameter type.".to_string()]
+            }),
             help: Some(
                 "Check the function arguments to ensure they match the expected parameter types."
                     .to_string(),
@@ -47,32 +113,74 @@ impl SuggestionHandler for InlineTypeMismatchHandler {
 struct MissingParametersHandler;
 impl SuggestionHandler for MissingParametersHandler {
     fn handle(&self, err: &TsError, tokens: &[Token]) -> Option<Suggestion> {
-        let mut fn_name = err
-            .message
-            .split('\'')
-            .nth(1)
-            .unwrap_or("function")
-            .to_string();
+        // Try to extract function name from message first, then search backwards in tokens
+        let fallback = extract_first_quoted(&err.message).unwrap_or_else(|| "function".to_string());
+        let fn_name = extract_function_name(err, tokens, &fallback);
 
-        for token in tokens {
-            if token.line == err.line
-                && (err.column - 1) >= token.column
-                && (err.column - 1) < token.column + token.raw.chars().count()
-            {
-                fn_name = token.raw.clone();
-                break;
-            }
-        }
+        // Parse expected/actual counts from message
+        let (expected, got) = if let Some(expected_str) = err.message.split("Expected ").nth(1) {
+            let expected_num = expected_str
+                .split(" argument")
+                .next()
+                .and_then(|s| s.trim().parse::<u32>().ok());
+            let got_num = expected_str
+                .split("but got ")
+                .nth(1)
+                .and_then(|s| s.split('.').next())
+                .and_then(|s| s.trim().parse::<u32>().ok());
+            (expected_num, got_num)
+        } else {
+            (None, None)
+        };
+
+        let (suggestion, help) = match (expected, got) {
+            (Some(exp), Some(g)) if g < exp => (
+                format!(
+                    "Function `{}` expects {} arguments but only received {}.",
+                    fn_name.red().bold(),
+                    exp,
+                    g
+                ),
+                format!(
+                    "Add the missing {} to match the expected signature.",
+                    if exp - g == 1 {
+                        "argument"
+                    } else {
+                        "arguments"
+                    }
+                ),
+            ),
+            (Some(exp), Some(g)) if g > exp => (
+                format!(
+                    "Function `{}` expects {} arguments but received {}.",
+                    fn_name.red().bold(),
+                    exp,
+                    g
+                ),
+                format!(
+                    "Remove the extra {} to match the expected signature.",
+                    if g - exp == 1 {
+                        "argument"
+                    } else {
+                        "arguments"
+                    }
+                ),
+            ),
+            _ => (
+                format!(
+                    "Check if all required arguments are provided when invoking {}",
+                    fn_name.red().bold()
+                ),
+                format!(
+                    "Ensure the correct number of arguments are passed to `{}`.",
+                    fn_name.red().bold()
+                ),
+            ),
+        };
 
         Some(Suggestion {
-            suggestions: vec![format!(
-                "Check if all required arguments are provided when invoking {}",
-                fn_name.red().bold()
-            )],
-            help: Some(format!(
-                "Function `{}` is missing 1 or more arguments.",
-                fn_name.red().bold()
-            )),
+            suggestions: vec![suggestion],
+            help: Some(help),
         })
     }
 }
@@ -80,7 +188,8 @@ impl SuggestionHandler for MissingParametersHandler {
 struct NoImplicitAnyHandler;
 impl SuggestionHandler for NoImplicitAnyHandler {
     fn handle(&self, err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
-        let param_name = err.message.split('\'').nth(1).unwrap_or("parameter");
+        let param_name =
+            extract_first_quoted(&err.message).unwrap_or_else(|| "parameter".to_string());
 
         Some(Suggestion {
             suggestions: vec![format!("{} is implicitly `any`.", param_name.red().bold())],
@@ -95,16 +204,7 @@ struct PropertyMissingInTypeHandler;
 impl SuggestionHandler for PropertyMissingInTypeHandler {
     fn handle(&self, err: &TsError, tokens: &[Token]) -> Option<Suggestion> {
         if let Some(type_name) = parse_property_missing_error(&err.message) {
-            let mut var_name: String = String::new();
-            for token in tokens {
-                if token.line == err.line
-                    && (err.column - 1) >= token.column
-                    && (err.column - 1) < token.column + token.raw.chars().count()
-                {
-                    var_name = token.raw.clone();
-                    break;
-                }
-            }
+            let var_name = extract_identifier_or_default(err, tokens, "");
 
             Some(Suggestion {
                 suggestions: vec![format!(
@@ -149,8 +249,9 @@ impl SuggestionHandler for UnintentionalComparisonHandler {
 struct PropertyDoesNotExistHandler;
 impl SuggestionHandler for PropertyDoesNotExistHandler {
     fn handle(&self, err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
-        let property_name = err.message.split('\'').nth(1).unwrap_or("property");
-        let type_name = err.message.split('\'').nth(3).unwrap_or("type");
+        let property_name =
+            extract_first_quoted(&err.message).unwrap_or_else(|| "property".to_string());
+        let type_name = extract_second_quoted(&err.message).unwrap_or_else(|| "type".to_string());
 
         Some(Suggestion {
             suggestions: vec![format!(
@@ -169,12 +270,8 @@ impl SuggestionHandler for PropertyDoesNotExistHandler {
 struct ObjectIsPossiblyUndefinedHandler;
 impl SuggestionHandler for ObjectIsPossiblyUndefinedHandler {
     fn handle(&self, err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
-        let possible_undefined_var = err
-            .message
-            .split('\'')
-            .nth(1)
-            .unwrap_or("object")
-            .to_string();
+        let possible_undefined_var =
+            extract_first_quoted(&err.message).unwrap_or_else(|| "object".to_string());
 
         Some(Suggestion {
             suggestions: vec![format!(
@@ -192,8 +289,10 @@ impl SuggestionHandler for ObjectIsPossiblyUndefinedHandler {
 struct DirectCastPotentiallyMistakenHandler;
 impl SuggestionHandler for DirectCastPotentiallyMistakenHandler {
     fn handle(&self, err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
-        let cast_from_type = err.message.split('\'').nth(1).unwrap_or("type");
-        let cast_to_type = err.message.split('\'').nth(3).unwrap_or("type");
+        let cast_from_type =
+            extract_first_quoted(&err.message).unwrap_or_else(|| "type".to_string());
+        let cast_to_type =
+            extract_second_quoted(&err.message).unwrap_or_else(|| "type".to_string());
 
         Some(Suggestion {
             suggestions: vec![format!(
@@ -277,7 +376,7 @@ impl SuggestionHandler for IncompatibleOverloadHandler {
 struct InvalidShadowInScopeHandler;
 impl SuggestionHandler for InvalidShadowInScopeHandler {
     fn handle(&self, err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
-        let var_name = err.message.split('\'').nth(1).unwrap_or("variable");
+        let var_name = extract_first_quoted(&err.message).unwrap_or_else(|| "variable".to_string());
 
         Some(Suggestion {
             suggestions: vec![format!(
@@ -295,7 +394,8 @@ impl SuggestionHandler for InvalidShadowInScopeHandler {
 struct NonExistentModuleImportHandler;
 impl SuggestionHandler for NonExistentModuleImportHandler {
     fn handle(&self, err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
-        let module_name = err.message.split('\'').nth(1).unwrap_or("module");
+        let module_name =
+            extract_first_quoted(&err.message).unwrap_or_else(|| "module".to_string());
 
         Some(Suggestion {
             suggestions: vec![format!(
@@ -313,7 +413,8 @@ impl SuggestionHandler for NonExistentModuleImportHandler {
 struct ReadonlyPropertyAssignmentHandler;
 impl SuggestionHandler for ReadonlyPropertyAssignmentHandler {
     fn handle(&self, err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
-        let property_name = err.message.split('\'').nth(1).unwrap_or("property");
+        let property_name =
+            extract_first_quoted(&err.message).unwrap_or_else(|| "property".to_string());
 
         Some(Suggestion {
             suggestions: vec![format!(
@@ -331,9 +432,11 @@ impl SuggestionHandler for ReadonlyPropertyAssignmentHandler {
 struct IncorrectInterfaceImplementationHandler;
 impl SuggestionHandler for IncorrectInterfaceImplementationHandler {
     fn handle(&self, err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
-        let class_name = err.message.split('\'').nth(1).unwrap_or("class");
-        let interface_name = err.message.split('\'').nth(3).unwrap_or("interface");
-        let missing_property = err.message.split('\'').nth(5).unwrap_or("property");
+        let class_name = extract_first_quoted(&err.message).unwrap_or_else(|| "class".to_string());
+        let interface_name =
+            extract_second_quoted(&err.message).unwrap_or_else(|| "interface".to_string());
+        let missing_property =
+            extract_third_quoted(&err.message).unwrap_or_else(|| "property".to_string());
 
         Some(Suggestion {
             suggestions: vec![format!(
@@ -354,11 +457,14 @@ impl SuggestionHandler for IncorrectInterfaceImplementationHandler {
 struct PropertyInClassNotAssignableToBaseHandler;
 impl SuggestionHandler for PropertyInClassNotAssignableToBaseHandler {
     fn handle(&self, err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
-        let property = err.message.split('\'').nth(1).unwrap_or("property");
-        let impl_type = err.message.split('\'').nth(3).unwrap_or("type");
-        let base_type = err.message.split('\'').nth(5).unwrap_or("base type");
-        let property_impl_type = err.message.split('\'').nth(7).unwrap_or("type");
-        let property_base_type = err.message.split('\'').nth(9).unwrap_or("base type");
+        let property = extract_first_quoted(&err.message).unwrap_or_else(|| "property".to_string());
+        let impl_type = extract_second_quoted(&err.message).unwrap_or_else(|| "type".to_string());
+        let base_type =
+            extract_third_quoted(&err.message).unwrap_or_else(|| "base type".to_string());
+        let property_impl_type =
+            extract_quoted_value(&err.message, 7).unwrap_or_else(|| "type".to_string());
+        let property_base_type =
+            extract_quoted_value(&err.message, 9).unwrap_or_else(|| "base type".to_string());
 
         Some(Suggestion {
             suggestions: vec![
@@ -388,7 +494,8 @@ impl SuggestionHandler for PropertyInClassNotAssignableToBaseHandler {
 struct CannotFindIdentifierHandler;
 impl SuggestionHandler for CannotFindIdentifierHandler {
     fn handle(&self, err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
-        let identifier = err.message.split('\'').nth(1).unwrap_or("identifier");
+        let identifier =
+            extract_first_quoted(&err.message).unwrap_or_else(|| "identifier".to_string());
 
         Some(Suggestion {
             suggestions: vec![format!(
@@ -421,7 +528,7 @@ impl SuggestionHandler for MissingReturnValueHandler {
 struct UncallableExpressionHandler;
 impl SuggestionHandler for UncallableExpressionHandler {
     fn handle(&self, err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
-        let expr = err.message.split('\'').nth(1).unwrap_or("expression");
+        let expr = extract_first_quoted(&err.message).unwrap_or_else(|| "expression".to_string());
 
         Some(Suggestion {
             suggestions: vec![format!(
@@ -439,7 +546,7 @@ impl SuggestionHandler for UncallableExpressionHandler {
 struct InvalidIndexTypeHandler;
 impl SuggestionHandler for InvalidIndexTypeHandler {
     fn handle(&self, err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
-        let index_type = err.message.split('\'').nth(1).unwrap_or("type");
+        let index_type = extract_first_quoted(&err.message).unwrap_or_else(|| "type".to_string());
 
         Some(Suggestion {
             suggestions: vec![format!(
@@ -454,9 +561,11 @@ impl SuggestionHandler for InvalidIndexTypeHandler {
 struct TypoPropertyOnTypeHandler;
 impl SuggestionHandler for TypoPropertyOnTypeHandler {
     fn handle(&self, err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
-        let property_name = err.message.split('\'').nth(1).unwrap_or("property");
-        let type_name = err.message.split('\'').nth(3).unwrap_or("type");
-        let suggested_property_name = err.message.split('\'').nth(5).unwrap_or("property");
+        let property_name =
+            extract_first_quoted(&err.message).unwrap_or_else(|| "property".to_string());
+        let type_name = extract_second_quoted(&err.message).unwrap_or_else(|| "type".to_string());
+        let suggested_property_name =
+            extract_third_quoted(&err.message).unwrap_or_else(|| "property".to_string());
 
         Some(Suggestion {
             suggestions: vec![format!(
@@ -469,6 +578,43 @@ impl SuggestionHandler for TypoPropertyOnTypeHandler {
                 "Check for typos in the property name `{}` or ensure that it is defined on type `{}`.",
                 property_name.red().bold(),
                 type_name.red().bold()
+            )),
+        })
+    }
+}
+
+struct ObjectIsPossiblyNullHandler;
+impl SuggestionHandler for ObjectIsPossiblyNullHandler {
+    fn handle(&self, err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+        let possible_null_var =
+            extract_first_quoted(&err.message).unwrap_or_else(|| "object".to_string());
+
+        Some(Suggestion {
+            suggestions: vec![format!(
+                "{} may be `null` here.",
+                possible_null_var.red().bold()
+            )],
+            help: Some(format!(
+                "Consider optional chaining or an explicit null check before attempting to access `{}`",
+                possible_null_var.red().bold()
+            )),
+        })
+    }
+}
+
+struct ObjectIsUnknownHandler;
+impl SuggestionHandler for ObjectIsUnknownHandler {
+    fn handle(&self, err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+        let unknown_var = extract_first_quoted(&err.message).unwrap_or_else(|| "value".to_string());
+
+        Some(Suggestion {
+            suggestions: vec![format!(
+                "{} is of type `unknown`.",
+                unknown_var.red().bold()
+            )],
+            help: Some(format!(
+                "Use type guards, type assertions, or narrow the type of `{}` before accessing its properties.",
+                unknown_var.red().bold()
             )),
         })
     }
@@ -513,9 +659,8 @@ impl Suggest for Suggestion {
             CommonErrors::UncallableExpression => Box::new(UncallableExpressionHandler),
             CommonErrors::InvalidIndexType => Box::new(InvalidIndexTypeHandler),
             CommonErrors::TypoPropertyOnType => Box::new(TypoPropertyOnTypeHandler),
-            // TODO: figure out why both of these 2 are not parsing correctly
-            CommonErrors::ObjectIsPossiblyNull => return None,
-            CommonErrors::ObjectIsUnknown => return None,
+            CommonErrors::ObjectIsPossiblyNull => Box::new(ObjectIsPossiblyNullHandler),
+            CommonErrors::ObjectIsUnknown => Box::new(ObjectIsUnknownHandler),
             CommonErrors::Unsupported(_) => return None,
         };
 
@@ -559,118 +704,4 @@ fn inline_type_mismatch_2345(err: &TsError) -> Option<Vec<String>> {
     } else {
         None
     }
-}
-
-fn parse_ts2322_error(msg: &str) -> Option<(String, String)> {
-    let mut chars = msg.chars().peekable();
-
-    fn read_quoted<I: Iterator<Item = char>>(chars: &mut std::iter::Peekable<I>) -> Option<String> {
-        // Expect starting `'`
-        if chars.next()? != '\'' {
-            return None;
-        }
-        let mut out = String::new();
-        while let Some(&c) = chars.peek() {
-            chars.next();
-            if c == '\'' {
-                break;
-            }
-            out.push(c);
-        }
-        Some(out)
-    }
-
-    while let Some(_) = chars.next() {
-        let mut lookahead = chars.clone();
-        if lookahead.next()? == 'y'
-            && lookahead.next()? == 'p'
-            && lookahead.next()? == 'e'
-            && lookahead.next()? == ' '
-            && lookahead.next()? == '\''
-        {
-            for _ in 0..4 {
-                chars.next();
-            }
-            let from = read_quoted(&mut chars)?;
-
-            while let Some(c) = chars.next() {
-                if c == '\'' {
-                    let mut secondary = String::new();
-                    for c2 in chars.by_ref() {
-                        if c2 == '\'' {
-                            break;
-                        }
-                        secondary.push(c2);
-                    }
-                    return Some((from, secondary));
-                }
-            }
-        }
-    }
-
-    None
-}
-
-fn parse_property_missing_error(msg: &str) -> Option<String> {
-    let type_marker = "type '";
-    if let Some(start_index) = msg.rfind(type_marker) {
-        let rest_of_msg = &msg[start_index + type_marker.len()..];
-        if let Some(end_index) = rest_of_msg.find('\'') {
-            return Some(rest_of_msg[..end_index].to_string());
-        }
-    }
-    None
-}
-
-fn parse_ts2345_error(msg: &str) -> Option<Vec<(String, String, String)>> {
-    let provided_obj = extract_object_type(msg, "Argument of type '")?;
-    let expected_obj = extract_object_type(msg, "to parameter of type '")?;
-
-    let provided_props = parse_object_properties(&provided_obj);
-    let expected_props = parse_object_properties(&expected_obj);
-
-    // Find all mismatched properties
-    let mut mismatches = Vec::new();
-    for (key, expected_type) in &expected_props {
-        if let Some(provided_type) = provided_props.get(key)
-            && provided_type != expected_type
-        {
-            mismatches.push((key.clone(), provided_type.clone(), expected_type.clone()));
-        }
-    }
-
-    Some(mismatches)
-}
-
-fn extract_object_type(msg: &str, marker: &str) -> Option<String> {
-    let start = msg.find(marker)? + marker.len();
-    let rest = &msg[start..];
-    let end = rest.find('\'')?;
-    Some(rest[..end].to_string())
-}
-
-fn parse_object_properties(obj_type: &str) -> std::collections::HashMap<String, String> {
-    let mut props = std::collections::HashMap::new();
-
-    let obj_type = obj_type.trim();
-    if !obj_type.starts_with('{') || !obj_type.ends_with('}') {
-        return props;
-    }
-
-    let inner = &obj_type[1..obj_type.len() - 1];
-
-    for prop in inner.split(';') {
-        let prop = prop.trim();
-        if prop.is_empty() {
-            continue;
-        }
-
-        if let Some(colon_pos) = prop.find(':') {
-            let key = prop[..colon_pos].trim().to_string();
-            let value = prop[colon_pos + 1..].trim().to_string();
-            props.insert(key, value);
-        }
-    }
-
-    props
 }
