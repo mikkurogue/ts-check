@@ -183,13 +183,23 @@ impl Suggest for Suggestion {
                     ),
                 })
             },
-            CommonErrors::RightSideArithmeticMustBeNumber => Some(Self {
+            CommonErrors::RightSideArithmeticMustBeEnumberable => Some(Self {
                 suggestions: vec![
                     "The right-hand side of any arithmetic operation must be a number or enumerable."
                         .to_string()
                 ],
                 help: Some(
                     "Ensure that the value on the right side of the arithmetic operator is of type `number`, `bigint` or an enum member."
+                        .to_string(),
+                ),
+            }),
+            CommonErrors::LeftSideArithmeticMustBeEnumberable => Some(Self {
+                suggestions: vec![
+                    "The left-hand side of any arithmetic operation must be a number or enumerable."
+                        .to_string()
+                ],
+                help: Some(
+                    "Ensure that the value on the left side of the arithmetic operator is of type `number`, `bigint` or an enum member."
                         .to_string(),
                 ),
             }),
@@ -265,6 +275,109 @@ impl Suggest for Suggestion {
                     )),
                 })
             }
+            CommonErrors::PropertyInClassNotAssignableToBase => {
+                let property = err.message.split('\'').nth(1).unwrap_or("property");
+                let impl_type = err.message.split('\'').nth(3).unwrap_or("type");
+                let base_type = err.message.split('\'').nth(5).unwrap_or("base type");
+                
+                let property_impl_type = err.message.split('\'').nth(7).unwrap_or("type");
+                let property_base_type = err.message.split('\'').nth(9).unwrap_or("base type");
+
+                Some(Self {
+                    suggestions: vec![
+                        format!(
+                            "Property `{}` in class `{}` is not assignable to the same property in base class `{}`.",
+                            property.red().bold(),
+                            impl_type.red().bold(),
+                            base_type.red().bold()
+                        ),
+                        format!(
+                            "Property `{}` is implemented as type `{}` but defined as `{}`.",
+                            property.red().bold(),
+                            property_impl_type.red().bold(),
+                            property_base_type.green().bold()
+                        )
+
+                    ],
+                    help: Some(format!(
+                        "Ensure that the type of property `{}` in class `{}` is compatible with the type defined in base class `{}`.",
+                        property.red().bold(),
+                        impl_type.red().bold(),
+                        base_type.red().bold()
+                    )),
+                })
+            }
+            CommonErrors::CannotFindIdentifier => {
+                let identifier = err.message.split('\'').nth(1).unwrap_or("identifier");
+
+                Some(Self {
+                    suggestions: vec![format!(
+                        "Identifier `{}` cannot be found in the current scope.",
+                        identifier.red().bold()
+                    )],
+                    help: Some(format!(
+                        "Ensure that `{}` is declared and accessible in the current scope or remove this reference.",
+                        identifier.red().bold()
+                    )),
+                })
+            }
+            CommonErrors::MissingReturnValue => {
+                Some(Self {
+                    suggestions: vec![
+                        "A return value is missing where one is expected.".to_string()
+                    ],
+                    help: Some(
+                        "A function that declares a return type must return a value of that type on all branches."
+                            .to_string(),
+                    ),
+                })
+            }
+            CommonErrors::UncallableExpression => {
+                let expr = err.message.split('\'').nth(1).unwrap_or("expression");
+
+                Some(Self {
+                    suggestions: vec![format!(
+                        "Expression `{}` not can not be invoked or called.",
+                        expr.red().bold()
+                    )],
+                    help: Some(format!(
+                        "Ensure that `{}` is a function or has a callable signature before invoking it.",
+                        expr.red().bold()
+                    )),
+                })
+            }
+            CommonErrors::InvalidIndexType => {
+                let index_type = err.message.split('\'').nth(1).unwrap_or("type");
+
+                Some(Self {
+                    suggestions: vec![format!(
+                        "`{}` cannot be used as an index accessor.",
+                        index_type.red().bold()
+                    )],
+                    help: Some("Ensure that the index type is `number`, `string`, `symbole` or a compatible index type.".to_string(),
+                    ),
+                })
+            }
+            CommonErrors::TypoPropertyOnType => {
+                let property_name = err.message.split('\'').nth(1).unwrap_or("property");
+                let type_name = err.message.split('\'').nth(3).unwrap_or("type");
+                let suggested_property_name = err.message.split('\'').nth(5).unwrap_or("property");
+
+                Some(Self {
+                    suggestions: vec![format!(
+                        "Property `{}` does not exist on type `{}`. Try `{}` instead",
+                        property_name.red().bold(),
+                        type_name.yellow().bold(),
+                        suggested_property_name.green().bold()
+                    )],
+                    help: Some(format!(
+                        "Check for typos in the property name `{}` or ensure that it is defined on type `{}`.",
+                        property_name.red().bold(),
+                        type_name.red().bold()
+                    )),
+                })
+            }
+
             CommonErrors::ObjectIsPossiblyNull => None,
             CommonErrors::ObjectIsUnknown => None,
             CommonErrors::Unsupported(_) => None,
