@@ -12,7 +12,12 @@ if not root then
   root = script_dir:match("(.*/)"):match("(.*/)")
 end
 
-local bin = root .. "target/release/ts-analyzer"
+-- Ensure root ends with a slash
+if root and not root:match("/$") then
+  root = root .. "/"
+end
+
+local bin = root and (root .. "target/release/ts-analyzer") or nil
 
 ---Run ts-analyzer in LSP mode with a single diagnostic
 ---@param filepath string The path to the TypeScript file
@@ -27,8 +32,9 @@ function M.format_diagnostic(filepath, line, column, code, message)
   end
 
   -- Check if binary exists
-  if vim.fn.filereadable(bin) ~= 1 then
-    vim.notify("ts-analyzer binary not found at: " .. bin, vim.log.levels.WARN)
+  if not bin or vim.fn.filereadable(bin) ~= 1 then
+    local error_msg = bin and ("ts-analyzer binary not found at: " .. bin) or "ts-analyzer binary path could not be determined"
+    vim.notify(error_msg, vim.log.levels.WARN)
     return nil
   end
 
