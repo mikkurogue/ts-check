@@ -1,8 +1,17 @@
 ---@diagnostic disable: undefined-global
 local M = {}
 
-local root = debug.getinfo(1, "S").source:sub(2):match("(.*/)")
-root = root:match("(.*/)") -- move up 1 dir
+-- Get the directory where this file is located
+local source = debug.getinfo(1, "S").source:sub(2)
+local script_dir = source:match("(.*/)")
+
+-- Go up from lua/ts-analyzer/ to the plugin root
+local root = script_dir:match("(.*/)lua/ts%-analyzer/$")
+if not root then
+  -- Fallback: go up 2 directories
+  root = script_dir:match("(.*/)"):match("(.*/)") 
+end
+
 local bin = root .. "target/release/ts-analyzer"
 
 ---Parse ts-analyzer output into a table of diagnostics by line number
