@@ -14,14 +14,68 @@ mod tokenizer;
 struct Cli {
     /// Optional file to read TSC error output from. If not provided, runs `tsc` in the current directory.
     input: Option<String>,
+
+    /// Format a diagnostic from LSP instead of running tsc
+    #[arg(long)]
+    from_lsp: bool,
+
+    /// Error code (e.g., TS2322) - required for --from-lsp
+    #[arg(long, requires = "from_lsp")]
+    code: Option<String>,
+
+    /// Error message - required for --from-lsp
+    #[arg(long, requires = "from_lsp")]
+    message: Option<String>,
+
+    /// Line number (1-indexed) - required for --from-lsp
+    #[arg(long, requires = "from_lsp")]
+    line: Option<usize>,
+
+    /// Column number (1-indexed) - required for --from-lsp
+    #[arg(long, requires = "from_lsp")]
+    column: Option<usize>,
+
+    /// File path - required for --from-lsp
+    #[arg(long, requires = "from_lsp")]
+    file: Option<String>,
 }
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    // Default behavior: parse tsc output
-    parse_tsc_output(cli.input)?;
+    if cli.from_lsp {
+        // LSP mode: format a single diagnostic
+        format_lsp_diagnostic(
+            cli.file.expect("--file required"),
+            cli.line.expect("--line required"),
+            cli.column.expect("--column required"),
+            cli.code.expect("--code required"),
+            cli.message.expect("--message required"),
+        )?;
+    } else {
+        // Default behavior: parse tsc output
+        parse_tsc_output(cli.input)?;
+    }
 
+    Ok(())
+}
+
+fn format_lsp_diagnostic(
+    file: String,
+    line: usize,
+    column: usize,
+    code: String,
+    message: String,
+) -> Result<()> {
+    let parsed = parser::TsError {
+        file,
+        line,
+        column,
+        code: parser::CommonErrors::from_code(&code),
+        message,
+    };
+
+    println!("{}", formatter::fmt(&parsed));
     Ok(())
 }
 

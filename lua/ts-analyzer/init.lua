@@ -26,19 +26,32 @@ local function setup_diagnostic_handler(opts)
         -- Get the file path from the URI
         local filepath = v.uri_to_fname(result.uri)
 
-        -- Run ts-analyzer on the file
-        local enhanced_diagnostics = runner.run(filepath)
+        -- Enhance each diagnostic individually using LSP mode
+        for _, diag in ipairs(result.diagnostics) do
+          -- LSP lines are 0-indexed, convert to 1-indexed
+          local line = diag.range.start.line + 1
+          -- LSP columns are 0-indexed, convert to 1-indexed
+          local column = diag.range.start.character + 1
+          
+          -- Extract error code from diagnostic
+          local code = diag.code
+          if type(code) == "table" and code.value then
+            code = code.value
+          end
+          code = tostring(code or "")
+          
+          -- Get enhanced diagnostic from ts-analyzer in LSP mode
+          local enhanced = runner.format_diagnostic(
+            filepath,
+            line,
+            column,
+            code,
+            diag.message
+          )
 
-        if enhanced_diagnostics then
-          -- Match diagnostics by line number and replace messages
-          for _, diag in ipairs(result.diagnostics) do
-            -- LSP lines are 0-indexed, convert to 1-indexed for matching
-            local line = diag.range.start.line + 1
-
-            if enhanced_diagnostics[line] then
-              -- Replace the diagnostic message with the enhanced one
-              diag.message = enhanced_diagnostics[line]
-            end
+          if enhanced then
+            -- Replace the diagnostic message with the enhanced one
+            diag.message = enhanced
           end
         end
       end

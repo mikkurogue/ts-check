@@ -14,52 +14,14 @@ end
 
 local bin = root .. "target/release/ts-analyzer"
 
----Parse ts-analyzer output into a table of diagnostics by line number
----@param output string The output from ts-analyzer
----@return table<number, string> Map of line numbers to enhanced diagnostic messages
-local function parse_output(output)
-  local diagnostics = {}
-
-  -- Strip ANSI color codes
-  output = output:gsub("\27%[[%d;]*m", "")
-
-  -- Split output into individual error blocks (separated by blank lines)
-  local current_error = {}
-  local current_line = nil
-
-  for line in output:gmatch("[^\r\n]+") do
-    -- Match line number from the location pattern: "╭─[ file.ts:LINE:COL ]"
-    -- Updated pattern to handle the actual format with spaces
-    local line_num = line:match("╭─%[%s*[^:]+:(%d+):%d+%s*%]")
-
-    if line_num then
-      -- Save previous error if exists
-      if current_line and #current_error > 0 then
-        diagnostics[current_line] = table.concat(current_error, "\n")
-      end
-      -- Start new error
-      current_line = tonumber(line_num)
-      current_error = {}
-    end
-
-    -- Collect all lines for current error (skip "Total errors:" line)
-    if current_line and not line:match("^Total errors:") then
-      table.insert(current_error, line)
-    end
-  end
-
-  -- Save last error
-  if current_line and #current_error > 0 then
-    diagnostics[current_line] = table.concat(current_error, "\n")
-  end
-
-  return diagnostics
-end
-
----Run ts-analyzer binary on a file and return parsed diagnostics
+---Run ts-analyzer in LSP mode with a single diagnostic
 ---@param filepath string The path to the TypeScript file
----@return table<number, string>|nil Map of line numbers to diagnostic messages or nil on error
-function M.run(filepath)
+---@param line number Line number (1-indexed)
+---@param column number Column number (1-indexed) 
+---@param code string Error code (e.g., "TS2322")
+---@param message string Error message
+---@return string|nil Enhanced diagnostic message or nil on error
+function M.format_diagnostic(filepath, line, column, code, message)
   if not filepath or filepath == "" then
     return nil
   end
@@ -70,8 +32,19 @@ function M.run(filepath)
     return nil
   end
 
-  -- Run the binary with the file path
-  local handle = io.popen(bin .. " " .. vim.fn.shellescape(filepath) .. " 2>&1")
+  -- Build command with LSP mode flags
+  local cmd = string.format(
+    "%s --from-lsp --file %s --line %d --column %d --code %s --message %s 2>&1",
+    bin,
+    vim.fn.shellescape(filepath),
+    line,
+    column,
+    vim.fn.shellescape(code),
+    vim.fn.shellescape(message)
+  )
+
+  -- Run the binary
+  local handle = io.popen(cmd)
   if not handle then
     return nil
   end
@@ -79,8 +52,10 @@ function M.run(filepath)
   local result = handle:read("*a")
   handle:close()
 
-  -- Parse the output into line-based diagnostics
-  return parse_output(result)
+  -- Strip ANSI color codes for display in diagnostics
+  result = result:gsub("\27%[[%d;]*m", "")
+
+  return result ~= "" and result or nil
 end
 
 return M
