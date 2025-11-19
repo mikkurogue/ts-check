@@ -26,17 +26,20 @@ local function parse_output(output)
   
   for line in output:gmatch("[^\r\n]+") do
     -- Match line number from the location pattern: "╭─[ file.ts:LINE:COL ]"
-    local line_num = line:match("╭─%[%s*[^:]+:(%d+):")
+    -- Updated pattern to handle the actual format with spaces
+    local line_num = line:match("╭─%[%s*[^:]+:(%d+):%d+%s*%]")
     
     if line_num then
       -- Save previous error if exists
       if current_line and #current_error > 0 then
         diagnostics[current_line] = table.concat(current_error, "\n")
+        print(string.format("[ts-analyzer parser] Saved diagnostic for line %d", current_line))
       end
       
       -- Start new error
       current_line = tonumber(line_num)
       current_error = {}
+      print(string.format("[ts-analyzer parser] Found error at line %d", current_line))
     end
     
     -- Collect all lines for current error (skip "Total errors:" line)
@@ -48,7 +51,12 @@ local function parse_output(output)
   -- Save last error
   if current_line and #current_error > 0 then
     diagnostics[current_line] = table.concat(current_error, "\n")
+    print(string.format("[ts-analyzer parser] Saved diagnostic for line %d", current_line))
   end
+  
+  print(string.format("[ts-analyzer parser] Parsed %d diagnostics from lines: %s", 
+    vim.tbl_count(diagnostics), 
+    vim.inspect(vim.tbl_keys(diagnostics))))
   
   return diagnostics
 end
