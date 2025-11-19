@@ -58,6 +58,7 @@ end
 ---@return table<number, string>|nil Map of line numbers to diagnostic messages or nil on error
 function M.run(filepath)
   if not filepath or filepath == "" then
+    print("[ts-analyzer] No filepath provided")
     return nil
   end
 
@@ -67,14 +68,19 @@ function M.run(filepath)
     return nil
   end
 
+  print(string.format("[ts-analyzer] Running binary: %s %s", bin, filepath))
+
   -- Run the binary with the file path
   local handle = io.popen(bin .. " " .. vim.fn.shellescape(filepath) .. " 2>&1")
   if not handle then
+    print("[ts-analyzer] Failed to open process")
     return nil
   end
 
   local result = handle:read("*a")
   handle:close()
+
+  print(string.format("[ts-analyzer] Got output (%d bytes)", #result))
 
   -- Parse the output into line-based diagnostics
   return parse_output(result)

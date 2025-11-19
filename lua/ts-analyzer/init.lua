@@ -26,21 +26,35 @@ local function setup_diagnostic_handler(opts)
         -- Get the file path from the URI
         local filepath = v.uri_to_fname(result.uri)
         
+        -- Debug: print what we're processing
+        print(string.format("[ts-analyzer] Processing %d diagnostics for %s", #result.diagnostics, filepath))
+        
         -- Run ts-analyzer on the file
         local enhanced_diagnostics = runner.run(filepath)
         
         if enhanced_diagnostics then
+          print(string.format("[ts-analyzer] Got %d enhanced diagnostics", vim.tbl_count(enhanced_diagnostics)))
+          
           -- Match diagnostics by line number and replace messages
           for _, diag in ipairs(result.diagnostics) do
             -- LSP lines are 0-indexed, convert to 1-indexed for matching
             local line = diag.range.start.line + 1
             
             if enhanced_diagnostics[line] then
+              -- Debug: show replacement
+              print(string.format("[ts-analyzer] Replacing diagnostic on line %d", line))
+              
               -- Replace the diagnostic message with the enhanced one
               diag.message = enhanced_diagnostics[line]
+            else
+              print(string.format("[ts-analyzer] No enhanced diagnostic for line %d", line))
             end
           end
+        else
+          print("[ts-analyzer] No enhanced diagnostics returned")
         end
+      else
+        print(string.format("[ts-analyzer] Skipping client: %s (not in configured servers)", client_name))
       end
     end
     return original_diagnostics(err, result, ctx, config)
