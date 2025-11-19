@@ -13,17 +13,44 @@ pub fn fmt(err: &TsError) -> String {
     }
 
     let tokens = Tokenizer::new(src.clone()).tokenize();
-    let mut span = 0..0;
+    let mut span = None;
 
     for token in &tokens {
         if token.line == err.line
             && (err.column - 1) >= token.column
             && (err.column - 1) < token.column + token.raw.chars().count()
         {
-            span = token.start..token.end;
+            span = Some(token.start..token.end);
             break;
         }
     }
+
+    // If no token matched, calculate span from line/column
+    let span = span.unwrap_or_else(|| {
+        let mut byte_offset = 0;
+        let mut current_line = 1;
+        let mut current_column = 0;
+
+        for ch in src.chars() {
+            if current_line == err.line && current_column == err.column - 1 {
+                // Found the position, use a small span for the character
+                let char_len = ch.len_utf8();
+                return byte_offset..byte_offset + char_len;
+            }
+
+            if ch == '\n' {
+                current_line += 1;
+                current_column = 0;
+            } else {
+                current_column += 1;
+            }
+
+            byte_offset += ch.len_utf8();
+        }
+
+        // If we couldn't find the exact position, return the last byte offset
+        byte_offset.max(1) - 1..byte_offset
+    });
 
     let suggestion = Suggestion::build(err, &tokens);
 
