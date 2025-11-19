@@ -65,6 +65,11 @@ local function setup_diagnostic_handler(opts)
           end
           code = tostring(code or "")
           
+          -- Add "TS" prefix if not present
+          if code ~= "" and not code:match("^TS") then
+            code = "TS" .. code
+          end
+          
           -- Get enhanced diagnostic from ts-analyzer in LSP mode
           local enhanced = runner.format_diagnostic(
             filepath,
