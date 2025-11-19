@@ -3,6 +3,31 @@ local M = {}
 local v = vim
 local runner = require("ts-analyzer.runner")
 
+-- Auto-build binary if missing
+local function ensure_binary()
+  local source = debug.getinfo(1, "S").source:sub(2)
+  local script_dir = source:match("(.*/)")
+  local root = script_dir:match("(.*/)lua/ts%-analyzer/$")
+  if not root then
+    root = script_dir:match("(.*/)"):match("(.*/)")
+  end
+  if root and not root:match("/$") then
+    root = root .. "/"
+  end
+  
+  local bin = root and (root .. "target/release/ts-analyzer")
+  if not bin or v.fn.filereadable(bin) ~= 1 then
+    v.notify("ts-analyzer binary not found. Building...", v.log.levels.INFO)
+    local build_cmd = string.format("cd %s && cargo build --release --quiet 2>&1", root)
+    local result = v.fn.system(build_cmd)
+    if v.v.shell_error == 0 then
+      v.notify("ts-analyzer binary built successfully", v.log.levels.INFO)
+    else
+      v.notify("Failed to build ts-analyzer binary: " .. result, v.log.levels.ERROR)
+    end
+  end
+end
+
 ---@class Config
 ---@field attach boolean Auto-attach to LSP servers (default: true)
 ---@field servers string[] LSP server names to translate diagnostics for
@@ -80,6 +105,9 @@ function M.setup(opts)
   opts = opts or {}
 
   M.config = v.tbl_deep_extend("force", DEF_OPTS, opts)
+
+  -- Ensure binary exists, build if missing
+  ensure_binary()
 
   if M.config.attach then
     local diag_cfg = { servers = M.config.servers }

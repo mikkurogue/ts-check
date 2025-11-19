@@ -56,13 +56,26 @@ require("ts-analyzer").setup({
 })
 ```
 
-Restart Neovim to download the repository, then navigate to `~/.local/share/nvim/site/pack/core/opt/ts-analyzer` and run:
+Restart Neovim to download the repository. The plugin will automatically build the binary on first load if it's not found.
+
+**Optional: Auto-build on git pull**
+
+To automatically rebuild the binary when you pull updates, install the git hook:
 
 ```bash
-cargo build --release
+cd ~/.local/share/nvim/site/pack/core/opt/ts-analyzer
+cp post-merge.hook .git/hooks/post-merge
+chmod +x .git/hooks/post-merge
 ```
 
-This will build the binary and ensure it's installed correctly.
+**Manual build**
+
+You can also manually build at any time:
+
+```bash
+cd ~/.local/share/nvim/site/pack/core/opt/ts-analyzer
+cargo build --release
+```
 
 **Note:** Lazy.nvim and Packer instructions coming soon.
 

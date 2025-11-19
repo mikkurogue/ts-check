@@ -1,0 +1,12 @@
+#!/bin/bash
+# Auto-build ts-analyzer binary after git pull/merge
+
+echo "Building ts-analyzer binary..."
+cargo build --release --quiet
+
+if [ $? -eq 0 ]; then
+    echo "✓ ts-analyzer binary built successfully"
+else
+    echo "✗ Failed to build ts-analyzer binary"
+    exit 1
+fi
