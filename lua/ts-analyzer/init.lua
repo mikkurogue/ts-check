@@ -1,15 +1,11 @@
 ---@diagnostic disable: undefined-global
 local M = {}
 local v = vim
+local runner = require("ts-analyzer.runner")
 
 ---@class Config
 ---@field attach boolean Auto-attach to LSP servers (default: true)
 ---@field servers string[] LSP server names to translate diagnostics for
-
-local root = debug.getinfo(1, "S").source:sub(2):match("(.*/)")
-root = root:match("(.*/)") -- move up 1 dir
-
-local bin = root .. "target/release/ts-analyzer"
 
 -- All of this is stolen from the goat @dmmulroy
 local function get_lsp_client_name_by_id(id)
@@ -19,7 +15,7 @@ local function get_lsp_client_name_by_id(id)
 end
 
 -- All of this is stolen from the goat @dmmulroy
-function M.setup(opts)
+local function setup_diagnostic_handler(opts)
   local original_diagnostics = v.lsp.handlers["textDocument/publishDiagnostics"]
 
   v.lsp.handlers["textDocument/publishDiagnostics"] = function(err, result, ctx, config)
@@ -27,10 +23,22 @@ function M.setup(opts)
       local client_name = get_lsp_client_name_by_id(ctx.client_id)
 
       if v.tbl_contains(opts.servers, client_name) then
-        for _, diag in ipairs(result.diagnostics) do
-          if diag.message then
-            -- TODO: call ts-analyzer to translate message
-            diag.message = "[TS Analyzer] " .. "TODO"
+        -- Get the file path from the URI
+        local filepath = v.uri_to_fname(result.uri)
+        
+        -- Run ts-analyzer on the file
+        local enhanced_diagnostics = runner.run(filepath)
+        
+        if enhanced_diagnostics then
+          -- Match diagnostics by line number and replace messages
+          for _, diag in ipairs(result.diagnostics) do
+            -- LSP lines are 0-indexed, convert to 1-indexed for matching
+            local line = diag.range.start.line + 1
+            
+            if enhanced_diagnostics[line] then
+              -- Replace the diagnostic message with the enhanced one
+              diag.message = enhanced_diagnostics[line]
+            end
           end
         end
       end
@@ -56,14 +64,13 @@ M.config = DEF_OPTS
 
 
 function M.setup(opts)
-  opts = ops or {}
+  opts = opts or {}
 
   M.config = v.tbl_deep_extend("force", DEF_OPTS, opts)
 
   if M.config.attach then
     local diag_cfg = { servers = M.config.servers }
-
-    require("ts-analyzer").setup(diag_cfg)
+    setup_diagnostic_handler(diag_cfg)
   end
 end
 
