@@ -35,9 +35,40 @@ Example output;
 <img width="1291" height="704" alt="image" src="https://github.com/user-attachments/assets/fd2ae01b-bc47-470d-bbdf-8d97242577b1" />
 
 
-## Usage
+## Installation
+
+### Neovim Plugin
+
+Add the following to your Neovim configuration:
+
+```lua
+vim.pack.add({
+  { src = "https://github.com/mikkurogue/ts-analyzer" },
+})
+
+-- configure - these are also the only options lol
+require("ts-analyzer").setup({
+  attach = true,
+  servers = {
+    "ts_ls",
+    "vtsls"
+  }
+})
+```
+
+Restart Neovim to download the repository, then navigate to `~/.local/share/nvim/site/pack/core/opt/ts-analyzer` and run:
+
+```bash
+cargo build --release
+```
+
+This will build the binary and ensure it's installed correctly.
+
+**Note:** Lazy.nvim and Packer instructions coming soon.
+
+### CLI Usage
 
 Currently making the assumption that you will clone the repo and run `cargo install --path .`. then just simply run `ts-analyzer` in a typescript project with a tsconfig.json, or to analyze a single file run `ts-analyzer <path-to-file>.ts`
 
 
-Inspired by the GOAT [Dillon Mulroy](https://github.com/dmmulroy), where he made a nicer tsc reporter neovim plugin.
+Inspired by the GOAT [Dillon Mulroy](https://github.com/dmmulroy), where he made a nicer tsc reporter neovim plugin and i stole half of the stuff from him to even get it running in neovim now :D.
