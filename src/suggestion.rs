@@ -601,7 +601,7 @@ impl SuggestionHandler for InvalidIndexTypeHandler {
     }
 }
 
-/// I think this is mostly to handle custom type's like type MyType = { something: string}
+/// I think this is mostly to handle custom types like type MyType = { something: string}
 struct InvalidIndexTypeSignatureHandler;
 impl SuggestionHandler for InvalidIndexTypeSignatureHandler {
     fn handle(&self, err: &TsError, tokens: &[Token]) -> Option<Suggestion> {
