@@ -33,6 +33,7 @@ pub enum CommonErrors {
     MissingReturnValue,
     UncallableExpression,
     InvalidIndexType,
+    InvalidIndexTypeSignature, // TODO: check if this is the same as InvalidIndexType
     TypoPropertyOnType,
     UnterminatedStringLiteral,
     IdentifierExpected,
@@ -72,6 +73,7 @@ impl std::fmt::Display for CommonErrors {
             CommonErrors::MissingReturnValue => write!(f, "TS2355"),
             CommonErrors::UncallableExpression => write!(f, "TS2349"),
             CommonErrors::InvalidIndexType => write!(f, "TS2538"),
+            CommonErrors::InvalidIndexTypeSignature => write!(f, "TS1268"),
             CommonErrors::TypoPropertyOnType => write!(f, "TS2551"),
             CommonErrors::UnterminatedStringLiteral => write!(f, "TS1002"),
             CommonErrors::IdentifierExpected => write!(f, "TS1003"),
@@ -115,6 +117,7 @@ impl CommonErrors {
             "TS2349" => CommonErrors::UncallableExpression,
             "TS2551" => CommonErrors::TypoPropertyOnType,
             "TS2538" => CommonErrors::InvalidIndexType,
+            "TS1268" => CommonErrors::InvalidIndexTypeSignature,
             "TS1002" => CommonErrors::UnterminatedStringLiteral,
             "TS1003" => CommonErrors::IdentifierExpected,
             "TS1009" => CommonErrors::DisallowedTrailingComma,

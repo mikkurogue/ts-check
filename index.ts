@@ -18,3 +18,5 @@ const res;
 function testYield() {
   yield 42;
 }
+
+let myObject: { [key: CustomType]: string };

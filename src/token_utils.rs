@@ -71,7 +71,7 @@ pub fn find_identifier_after_keyword(
     keyword: &str,
 ) -> Option<(String, std::ops::Range<usize>)> {
     let mut found_keyword = false;
-    
+
     for token in tokens.iter() {
         if token.line != line {
             if found_keyword {
@@ -79,17 +79,17 @@ pub fn find_identifier_after_keyword(
             }
             continue;
         }
-        
+
         if token.raw == keyword {
             found_keyword = true;
             continue;
         }
-        
+
         if found_keyword && !token.raw.is_empty() && token.raw != ";" && token.raw != ":" {
             return Some((token.raw.clone(), token.start..token.end));
         }
     }
-    
+
     None
 }
 

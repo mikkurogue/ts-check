@@ -5,7 +5,7 @@ use crate::message_parser::{
 use crate::parser::{CommonErrors, TsError};
 use crate::token_utils::{
     extract_function_name, extract_identifier_at_error, extract_identifier_or_default,
-    find_identifier_after_keyword,
+    find_identifier_after_keyword, find_token_at_position,
 };
 use crate::tokenizer::Token;
 use colored::*;
@@ -595,8 +595,30 @@ impl SuggestionHandler for InvalidIndexTypeHandler {
                 "`{}` cannot be used as an index accessor.",
                 index_type.red().bold()
             )],
-            help: Some("Ensure that the index type is `number`, `string`, `symbole` or a compatible index type.".to_string()),
+            help: Some("Ensure that the index type is `number`, `string`, `symbol` or a compatible index type.".to_string()),
             span: None,
+        })
+    }
+}
+
+/// I think this is mostly to handle custom type's like type MyType = { something: string}
+struct InvalidIndexTypeSignatureHandler;
+impl SuggestionHandler for InvalidIndexTypeSignatureHandler {
+    fn handle(&self, err: &TsError, tokens: &[Token]) -> Option<Suggestion> {
+        let adjusted_column = err.column.saturating_sub(1);
+        let token = find_token_at_position(tokens, err.line, adjusted_column);
+        let span_text = token
+            .map(|t| t.raw.clone())
+            .unwrap_or_else(|| "property".to_string());
+        let span = token.map(|t| t.start..t.end).unwrap_or_else(|| 0..0);
+
+        Some(Suggestion {
+            suggestions: vec![format!(
+                "`{}` is not a valid index type.",
+                span_text.red().bold()
+            )],
+            help: Some("Ensure that the index type is `number`, `string`, `symbol`, `template literal` or a compatible index type.".to_string()),
+            span: Some(span),
         })
     }
 }
@@ -827,6 +849,7 @@ impl Suggest for Suggestion {
             CommonErrors::MissingReturnValue => Box::new(MissingReturnValueHandler),
             CommonErrors::UncallableExpression => Box::new(UncallableExpressionHandler),
             CommonErrors::InvalidIndexType => Box::new(InvalidIndexTypeHandler),
+            CommonErrors::InvalidIndexTypeSignature => Box::new(InvalidIndexTypeSignatureHandler),
             CommonErrors::TypoPropertyOnType => Box::new(TypoPropertyOnTypeHandler),
             CommonErrors::ObjectIsPossiblyNull => Box::new(ObjectIsPossiblyNullHandler),
             CommonErrors::ObjectIsUnknown => Box::new(ObjectIsUnknownHandler),
