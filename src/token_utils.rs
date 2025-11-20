@@ -129,4 +129,54 @@ mod tests {
         );
         assert_eq!(find_token_at_position(&tokens, 1, 10), None);
     }
+
+    #[test]
+    fn test_find_token_after_keyword() {
+        let tokens = vec![
+            Token {
+                kind: TokenKind::Keyword,
+                raw: "function".to_string(),
+                start: 0,
+                end: 8,
+                line: 1,
+                column: 0,
+            },
+            Token {
+                kind: TokenKind::Identifier,
+                raw: "myFunc".to_string(),
+                start: 9,
+                end: 15,
+                line: 1,
+                column: 9,
+            },
+        ];
+
+        let result = find_identifier_after_keyword(&tokens, 1, "function");
+        assert_eq!(result, Some(("myFunc".to_string(), 9..15)));
+    }
+
+    #[test]
+    fn test_find_token_after_keyword_not_found() {
+        let tokens = vec![
+            Token {
+                kind: TokenKind::Keyword,
+                raw: "let".to_string(),
+                start: 0,
+                end: 3,
+                line: 1,
+                column: 0,
+            },
+            Token {
+                kind: TokenKind::Identifier,
+                raw: "x".to_string(),
+                start: 4,
+                end: 5,
+                line: 1,
+
+                column: 4,
+            },
+        ];
+        let result = find_identifier_after_keyword(&tokens, 1, "function");
+        assert_eq!(result, None);
+    }
 }

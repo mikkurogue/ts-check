@@ -905,3 +905,32 @@ fn inline_type_mismatch_2345(err: &TsError) -> Option<Vec<String>> {
         None
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_suggestion_builder() {
+        let err = TsError {
+            code: CommonErrors::TypeMismatch,
+            message: "Type 'string' is not assignable to type 'number'.".to_string(),
+            line: 10,
+            column: 5,
+            file: "index.ts".to_string(),
+        };
+        let tokens = vec![];
+
+        let suggestion = Suggestion::build(&err, &tokens).unwrap();
+
+        assert_eq!(suggestion.suggestions.len(), 1);
+        assert_eq!(
+            suggestion.suggestions[0],
+            format!(
+                "Try converting this value from `{}` to `{}`.",
+                "string".red().bold(),
+                "number".green().bold()
+            )
+        );
+    }
+}
