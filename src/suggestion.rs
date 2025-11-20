@@ -538,7 +538,7 @@ impl SuggestionHandler for CannotFindIdentifierHandler {
 
         Some(Suggestion {
             suggestions: vec![format!(
-                "Identifier `{}` cannot be found in the current scope.",
+                "Identifier `{}` can not be found in the current scope.",
                 identifier.red().bold()
             )],
             help: Some(format!(
@@ -592,7 +592,7 @@ impl SuggestionHandler for InvalidIndexTypeHandler {
 
         Some(Suggestion {
             suggestions: vec![format!(
-                "`{}` cannot be used as an index accessor.",
+                "`{}` can not be used as an index accessor.",
                 index_type.red().bold()
             )],
             help: Some("Ensure that the index type is `number`, `string`, `symbol` or a compatible index type.".to_string()),
@@ -815,7 +815,7 @@ struct JsxFlagNotEnabledHandler;
 impl SuggestionHandler for JsxFlagNotEnabledHandler {
     fn handle(&self, _err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
         Some(Suggestion {
-            suggestions: vec![format!("JSX can not be used.",)],
+            suggestions: vec![format!("JSX can not be used.")],
             help: Some(format!(
                 "Enable the JSX flag in your TypeScript configuration to use JSX syntax."
             )),
@@ -832,8 +832,8 @@ impl SuggestionHandler for DeclaredButNeverUsedHandler {
         Some(Suggestion {
             suggestions: vec![format!("`{}` is unused", unused_decl.red().bold())],
             help: Some(format!(
-                "Consider removing declaration of `{}`",
-                unused_decl
+                "Consider removing the reference to `{}`",
+                unused_decl.yellow().bold()
             )),
             span: None,
         })
@@ -844,7 +844,7 @@ struct ImportedButNeverUsedHandler;
 impl SuggestionHandler for ImportedButNeverUsedHandler {
     fn handle(&self, _err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
         Some(Suggestion {
-            suggestions: vec![format!("This import is unused",)],
+            suggestions: vec![format!("This import is unused")],
             help: Some(format!("Consider removing it")),
             span: None,
         })
@@ -853,11 +853,24 @@ impl SuggestionHandler for ImportedButNeverUsedHandler {
 
 struct NoExportedMemberHandler;
 impl SuggestionHandler for NoExportedMemberHandler {
-    fn handle(&self, _err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+    fn handle(&self, err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+        let non_exported_member = extract_quoted_value(&err.message, 3);
+        let potential_correction = extract_quoted_value(&err.message, 5);
+
         Some(Suggestion {
-            suggestions: vec![format!("No exported member found.",)],
+            suggestions: vec![format!(
+                "`{}` is not exported from the module.",
+                non_exported_member
+                    .unwrap_or("member".to_string())
+                    .red()
+                    .bold()
+            )],
             help: Some(format!(
-                "Ensure that the member is exported from the module."
+                "Did you mean to import `{}`?",
+                potential_correction
+                    .unwrap_or("member".to_string())
+                    .green()
+                    .bold()
             )),
             span: None,
         })

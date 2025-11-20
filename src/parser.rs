@@ -138,7 +138,7 @@ impl CommonErrors {
             "TS1163" => CommonErrors::YieldNotInGenerator,
             "TS17004" => CommonErrors::JsxFlagNotProvided,
             "TS6133" => CommonErrors::DeclaredButNeverUsed,
-            "TS2305" => CommonErrors::NoExportedMember,
+            "TS2305" | "TS2724" => CommonErrors::NoExportedMember,
             "TS6192" => CommonErrors::ImportedButNeverUsed,
             "TS1259" => CommonErrors::InvalidDefaultImport,
 
