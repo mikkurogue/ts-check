@@ -84,6 +84,8 @@ fn parse_tsc_output(input: Option<String>) -> Result<()> {
 
     if let Some(input_file) = input {
         // Execute tsc on a specific file
+        // Note: When tsc is run with a file argument, it doesn't use tsconfig.json
+        // So we need to pass compiler options explicitly
         let output = std::process::Command::new("tsc")
             .arg(&input_file)
             .args([
@@ -94,6 +96,9 @@ fn parse_tsc_output(input: Option<String>) -> Result<()> {
                 "--noEmit",
                 "--preserveWatchOutput",
                 "false",
+                "--noUnusedLocals",
+                "--noUnusedParameters",
+                "--strict",
             ])
             .output()?;
         buf = format!(

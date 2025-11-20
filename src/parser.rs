@@ -43,6 +43,10 @@ pub enum CommonErrors {
     UniqueObjectMemberNames,
     UninitializedConst,
     YieldNotInGenerator,
+    JsxFlagNotProvided,
+    DeclaredButNeverUsed,
+    ImportedButNeverUsed,
+    NoExportedMember,
     InvalidDefaultImport,
     Unsupported(String),
 }
@@ -84,6 +88,10 @@ impl std::fmt::Display for CommonErrors {
             CommonErrors::UniqueObjectMemberNames => write!(f, "TS1117"),
             CommonErrors::UninitializedConst => write!(f, "TS1155"),
             CommonErrors::YieldNotInGenerator => write!(f, "TS1163"),
+            CommonErrors::JsxFlagNotProvided => write!(f, "TS17004"),
+            CommonErrors::DeclaredButNeverUsed => write!(f, "TS6133"),
+            CommonErrors::ImportedButNeverUsed => write!(f, "TS6192"),
+            CommonErrors::NoExportedMember => write!(f, "TS2305"),
             CommonErrors::InvalidDefaultImport => write!(f, "TS1259"),
 
             CommonErrors::Unsupported(code) => write!(f, "{}", code),
@@ -128,13 +136,16 @@ impl CommonErrors {
             "TS1117" => CommonErrors::UniqueObjectMemberNames,
             "TS1155" => CommonErrors::UninitializedConst,
             "TS1163" => CommonErrors::YieldNotInGenerator,
+            "TS17004" => CommonErrors::JsxFlagNotProvided,
+            "TS6133" => CommonErrors::DeclaredButNeverUsed,
+            "TS2305" => CommonErrors::NoExportedMember,
+            "TS6192" => CommonErrors::ImportedButNeverUsed,
             "TS1259" => CommonErrors::InvalidDefaultImport,
 
             other => CommonErrors::Unsupported(other.to_string()),
         }
     }
 }
-
 pub fn parse(line: &str) -> Option<TsError> {
     let (file, rest) = line.split_once('(')?;
     let (coords, rest) = rest.split_once("): error ")?;

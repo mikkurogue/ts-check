@@ -811,6 +811,59 @@ impl SuggestionHandler for YieldNotInGeneratorHandler {
     }
 }
 
+struct JsxFlagNotEnabledHandler;
+impl SuggestionHandler for JsxFlagNotEnabledHandler {
+    fn handle(&self, _err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+        Some(Suggestion {
+            suggestions: vec![format!("JSX can not be used.",)],
+            help: Some(format!(
+                "Enable the JSX flag in your TypeScript configuration to use JSX syntax."
+            )),
+            span: None,
+        })
+    }
+}
+
+struct DeclaredButNeverUsedHandler;
+impl SuggestionHandler for DeclaredButNeverUsedHandler {
+    fn handle(&self, err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+        let unused_decl = extract_first_quoted(&err.message).unwrap_or("declaration".to_string());
+
+        Some(Suggestion {
+            suggestions: vec![format!("`{}` is unused", unused_decl.red().bold())],
+            help: Some(format!(
+                "Consider removing declaration of `{}`",
+                unused_decl
+            )),
+            span: None,
+        })
+    }
+}
+
+struct ImportedButNeverUsedHandler;
+impl SuggestionHandler for ImportedButNeverUsedHandler {
+    fn handle(&self, _err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+        Some(Suggestion {
+            suggestions: vec![format!("This import is unused",)],
+            help: Some(format!("Consider removing it")),
+            span: None,
+        })
+    }
+}
+
+struct NoExportedMemberHandler;
+impl SuggestionHandler for NoExportedMemberHandler {
+    fn handle(&self, _err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+        Some(Suggestion {
+            suggestions: vec![format!("No exported member found.",)],
+            help: Some(format!(
+                "Ensure that the member is exported from the module."
+            )),
+            span: None,
+        })
+    }
+}
+
 struct InvalidDefaultImportHandler;
 impl SuggestionHandler for InvalidDefaultImportHandler {
     fn handle(&self, _err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
@@ -878,6 +931,11 @@ impl Suggest for Suggestion {
             CommonErrors::UniqueObjectMemberNames => Box::new(UniqueObjectMemberNamesHandler),
             CommonErrors::UninitializedConst => Box::new(UninitializedConstHandler),
             CommonErrors::YieldNotInGenerator => Box::new(YieldNotInGeneratorHandler),
+            CommonErrors::JsxFlagNotProvided => Box::new(JsxFlagNotEnabledHandler),
+            CommonErrors::DeclaredButNeverUsed => Box::new(DeclaredButNeverUsedHandler),
+            CommonErrors::NoExportedMember => Box::new(NoExportedMemberHandler),
+            CommonErrors::ImportedButNeverUsed => Box::new(ImportedButNeverUsedHandler),
+
             CommonErrors::InvalidDefaultImport => Box::new(InvalidDefaultImportHandler),
             CommonErrors::Unsupported(_) => return None,
         };

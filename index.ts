@@ -1,3 +1,5 @@
+import { exported, notExported } from "export-smth";
+
 // we expect ts error ts2322 here
 const age: number = "string in a number lol lmfao";
 
