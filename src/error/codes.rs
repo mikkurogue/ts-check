@@ -52,6 +52,7 @@ pub enum ErrorCode {
     JsxFlagNotProvided,
     DeclaredButNeverUsed,
     ImportedButNeverUsed,
+    UnreachableCode,
 
     /// Catch-all for unsupported error codes
     Unsupported(u16),
@@ -99,6 +100,7 @@ impl ErrorCode {
             "TS2305" | "TS2724" => ErrorCode::NoExportedMember,
             "TS6192" => ErrorCode::ImportedButNeverUsed,
             "TS1259" => ErrorCode::InvalidDefaultImport,
+            "TS95050" => ErrorCode::UnreachableCode,
 
             other => {
                 if let Some(num_str) = other.strip_prefix("TS")
@@ -153,6 +155,7 @@ impl ErrorCode {
             ErrorCode::ImportedButNeverUsed => "TS6192",
             ErrorCode::NoExportedMember => "TS2305",
             ErrorCode::InvalidDefaultImport => "TS1259",
+            ErrorCode::UnreachableCode => "TS95050",
             ErrorCode::Unsupported(_) => {
                 // This will return a static string for known codes, but for unsupported codes,
                 // we return a dynamically allocated string. To keep the return type consistent,

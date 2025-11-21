@@ -30,59 +30,68 @@ impl ErrorDiagnostic for ErrorCode {
     fn suggest(&self, err: &TsError, tokens: &[Token]) -> Option<Suggestion> {
         match self {
             ErrorCode::TypeMismatch => suggest_type_mismatch(err, tokens),
-            ErrorCode::InlineTypeMismatch => suggest_inline_type_mismatch(err, tokens),
+            ErrorCode::InlineTypeMismatch => suggest_inline_type_mismatch(err),
             ErrorCode::MissingParameters => suggest_missing_parameters(err, tokens),
-            ErrorCode::NoImplicitAny => suggest_no_implicit_any(err, tokens),
+            ErrorCode::NoImplicitAny => suggest_no_implicit_any(err),
             ErrorCode::PropertyMissingInType => suggest_property_missing_in_type(err, tokens),
-            ErrorCode::UnintentionalComparison => suggest_unintentional_comparison(err, tokens),
-            ErrorCode::PropertyDoesNotExist => suggest_property_does_not_exist(err, tokens),
-            ErrorCode::ObjectIsPossiblyUndefined => suggest_possibly_undefined(err, tokens),
-            ErrorCode::DirectCastPotentiallyMistaken => suggest_direct_cast_mistaken(err, tokens),
-            ErrorCode::SpreadArgumentMustBeTupleType => suggest_spread_tuple(err, tokens),
-            ErrorCode::RightSideArithmeticMustBeEnumberable => {
-                suggest_right_arithmetic(err, tokens)
-            }
-            ErrorCode::LeftSideArithmeticMustBeEnumberable => suggest_left_arithmetic(err, tokens),
-            ErrorCode::IncompatibleOverload => suggest_incompatible_overload(err, tokens),
-            ErrorCode::InvalidShadowInScope => suggest_invalid_shadow(err, tokens),
-            ErrorCode::NonExistentModuleImport => suggest_nonexistent_module(err, tokens),
-            ErrorCode::ReadonlyPropertyAssignment => suggest_readonly_property(err, tokens),
-            ErrorCode::IncorrectInterfaceImplementation => suggest_incorrect_interface(err, tokens),
-            ErrorCode::PropertyInClassNotAssignableToBase => {
-                suggest_property_not_assignable(err, tokens)
-            }
-            ErrorCode::CannotFindIdentifier => suggest_cannot_find_identifier(err, tokens),
-            ErrorCode::MissingReturnValue => suggest_missing_return(err, tokens),
-            ErrorCode::UncallableExpression => suggest_uncallable_expression(err, tokens),
-            ErrorCode::InvalidIndexType => suggest_invalid_index_type(err, tokens),
+            ErrorCode::UnintentionalComparison => suggest_unintentional_comparison(),
+            ErrorCode::PropertyDoesNotExist => suggest_property_does_not_exist(err),
+            ErrorCode::ObjectIsPossiblyUndefined => suggest_possibly_undefined(err),
+            ErrorCode::DirectCastPotentiallyMistaken => suggest_direct_cast_mistaken(err),
+            ErrorCode::SpreadArgumentMustBeTupleType => suggest_spread_tuple(err),
+            ErrorCode::RightSideArithmeticMustBeEnumberable => suggest_right_arithmetic(err),
+            ErrorCode::LeftSideArithmeticMustBeEnumberable => suggest_left_arithmetic(err),
+            ErrorCode::IncompatibleOverload => suggest_incompatible_overload(err),
+            ErrorCode::InvalidShadowInScope => suggest_invalid_shadow(err),
+            ErrorCode::NonExistentModuleImport => suggest_nonexistent_module(err),
+            ErrorCode::ReadonlyPropertyAssignment => suggest_readonly_property(err),
+            ErrorCode::IncorrectInterfaceImplementation => suggest_incorrect_interface(err),
+            ErrorCode::PropertyInClassNotAssignableToBase => suggest_property_not_assignable(err),
+            ErrorCode::CannotFindIdentifier => suggest_cannot_find_identifier(err),
+            ErrorCode::MissingReturnValue => suggest_missing_return(err),
+            ErrorCode::UncallableExpression => suggest_uncallable_expression(err),
+            ErrorCode::InvalidIndexType => suggest_invalid_index_type(err),
             ErrorCode::InvalidIndexTypeSignature => suggest_invalid_index_signature(err, tokens),
-            ErrorCode::TypoPropertyOnType => suggest_typo_property(err, tokens),
-            ErrorCode::ObjectIsPossiblyNull => suggest_possibly_null(err, tokens),
-            ErrorCode::ObjectIsUnknown => suggest_object_unknown(err, tokens),
-            ErrorCode::UnterminatedStringLiteral => suggest_unterminated_string(err, tokens),
-            ErrorCode::IdentifierExpected => suggest_identifier_expected(err, tokens),
-            ErrorCode::DisallowedTrailingComma => suggest_disallowed_comma(err, tokens),
-            ErrorCode::SpreadParameterMustBeLast => suggest_spread_parameter_last(err, tokens),
-            ErrorCode::ExpressionExpected => suggest_expression_expected(err, tokens),
-            ErrorCode::UniqueObjectMemberNames => suggest_unique_members(err, tokens),
+            ErrorCode::TypoPropertyOnType => suggest_typo_property(err),
+            ErrorCode::ObjectIsPossiblyNull => suggest_possibly_null(err),
+            ErrorCode::ObjectIsUnknown => suggest_object_unknown(err),
+            ErrorCode::UnterminatedStringLiteral => suggest_unterminated_string(err),
+            ErrorCode::IdentifierExpected => suggest_identifier_expected(),
+            ErrorCode::DisallowedTrailingComma => suggest_disallowed_comma(),
+            ErrorCode::SpreadParameterMustBeLast => suggest_spread_parameter_last(),
+            ErrorCode::ExpressionExpected => suggest_expression_expected(),
+            ErrorCode::UniqueObjectMemberNames => suggest_unique_members(),
             ErrorCode::UninitializedConst => suggest_uninitialized_const(err, tokens),
-            ErrorCode::YieldNotInGenerator => suggest_yield_not_in_generator(err, tokens),
-            ErrorCode::JsxFlagNotProvided => suggest_jsx_flag(err, tokens),
-            ErrorCode::DeclaredButNeverUsed => suggest_declared_unused(err, tokens),
-            ErrorCode::NoExportedMember => suggest_no_exported_member(err, tokens),
-            ErrorCode::ImportedButNeverUsed => suggest_imported_unused(err, tokens),
-            ErrorCode::InvalidDefaultImport => suggest_invalid_default_import(err, tokens),
+            ErrorCode::YieldNotInGenerator => suggest_yield_not_in_generator(),
+            ErrorCode::JsxFlagNotProvided => suggest_jsx_flag(),
+            ErrorCode::DeclaredButNeverUsed => suggest_declared_unused(err),
+            ErrorCode::NoExportedMember => suggest_no_exported_member(err),
+            ErrorCode::ImportedButNeverUsed => suggest_imported_unused(),
+            ErrorCode::InvalidDefaultImport => suggest_invalid_default_import(),
+            ErrorCode::UnreachableCode => unreachable_suggestion(),
             ErrorCode::Unsupported(_) => None,
         }
     }
 }
 
+/// Suggestion for TS95050
+fn unreachable_suggestion() -> Option<Suggestion> {
+    Some(Suggestion {
+        suggestions: vec!["Code here is unreachable".to_string()],
+        help:        Some("Consider removing unreachable code or the statement that causes this to be unreachable".to_string()),
+        span:        None,
+    })
+}
+
 // Suggestion functions
-fn suggest_type_mismatch(err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_type_mismatch(err: &TsError, tokens: &[Token]) -> Option<Suggestion> {
     if let Some((from, to)) = parse_ts2322_error(&err.message) {
+        let var_name = extract_identifier_or_default(err, tokens, "");
+
         Some(Suggestion {
             suggestions: vec![format!(
-                "Try converting this value from `{}` to `{}`.",
+                "Try converting `{}` from `{}` to `{}`.",
+                var_name.yellow().bold().italic(),
                 from.red().bold(),
                 to.green().bold()
             )],
@@ -97,7 +106,7 @@ fn suggest_type_mismatch(err: &TsError, _tokens: &[Token]) -> Option<Suggestion>
     }
 }
 
-fn suggest_inline_type_mismatch(err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_inline_type_mismatch(err: &TsError) -> Option<Suggestion> {
     if err
         .message
         .contains("Target signature provides too few arguments")
@@ -268,7 +277,7 @@ fn suggest_missing_parameters(err: &TsError, tokens: &[Token]) -> Option<Suggest
     })
 }
 
-fn suggest_no_implicit_any(err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_no_implicit_any(err: &TsError) -> Option<Suggestion> {
     let param_name = extract_first_quoted(&err.message).unwrap_or_else(|| "parameter".to_string());
 
     Some(Suggestion {
@@ -312,7 +321,7 @@ fn suggest_property_missing_in_type(err: &TsError, tokens: &[Token]) -> Option<S
     }
 }
 
-fn suggest_unintentional_comparison(_err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_unintentional_comparison() -> Option<Suggestion> {
     Some(Suggestion {
         suggestions: vec![
             "Impossible to compare as left side value is narrowed to a single value.".to_string(),
@@ -322,7 +331,7 @@ fn suggest_unintentional_comparison(_err: &TsError, _tokens: &[Token]) -> Option
     })
 }
 
-fn suggest_property_does_not_exist(err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_property_does_not_exist(err: &TsError) -> Option<Suggestion> {
     let property_name =
         extract_first_quoted(&err.message).unwrap_or_else(|| "property".to_string());
     let type_name = extract_second_quoted(&err.message).unwrap_or_else(|| "type".to_string());
@@ -341,7 +350,7 @@ fn suggest_property_does_not_exist(err: &TsError, _tokens: &[Token]) -> Option<S
     })
 }
 
-fn suggest_possibly_undefined(err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_possibly_undefined(err: &TsError) -> Option<Suggestion> {
     let possible_undefined_var =
         extract_first_quoted(&err.message).unwrap_or_else(|| "object".to_string());
 
@@ -358,7 +367,7 @@ fn suggest_possibly_undefined(err: &TsError, _tokens: &[Token]) -> Option<Sugges
     })
 }
 
-fn suggest_direct_cast_mistaken(err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_direct_cast_mistaken(err: &TsError) -> Option<Suggestion> {
     let cast_from_type = extract_first_quoted(&err.message).unwrap_or_else(|| "type".to_string());
     let cast_to_type = extract_second_quoted(&err.message).unwrap_or_else(|| "type".to_string());
 
@@ -377,7 +386,7 @@ fn suggest_direct_cast_mistaken(err: &TsError, _tokens: &[Token]) -> Option<Sugg
     })
 }
 
-fn suggest_spread_tuple(_err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_spread_tuple(_err: &TsError) -> Option<Suggestion> {
     Some(Suggestion {
         suggestions: vec![
             "The argument being spread must be a tuple type or a `spreadable` type.".to_string(),
@@ -390,7 +399,7 @@ fn suggest_spread_tuple(_err: &TsError, _tokens: &[Token]) -> Option<Suggestion>
     })
 }
 
-fn suggest_right_arithmetic(_err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_right_arithmetic(_err: &TsError) -> Option<Suggestion> {
     Some(Suggestion {
         suggestions: vec![
             "The right-hand side of any arithmetic operation must be a number or enumerable."
@@ -404,7 +413,7 @@ fn suggest_right_arithmetic(_err: &TsError, _tokens: &[Token]) -> Option<Suggest
     })
 }
 
-fn suggest_left_arithmetic(_err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_left_arithmetic(_err: &TsError) -> Option<Suggestion> {
     Some(Suggestion {
         suggestions: vec![
             "The left-hand side of any arithmetic operation must be a number or enumerable."
@@ -418,7 +427,7 @@ fn suggest_left_arithmetic(_err: &TsError, _tokens: &[Token]) -> Option<Suggesti
     })
 }
 
-fn suggest_incompatible_overload(_err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_incompatible_overload(_err: &TsError) -> Option<Suggestion> {
     Some(Suggestion {
         suggestions: vec![
             "The provided arguments do not match any overload of the function.".to_string(),
@@ -431,7 +440,7 @@ fn suggest_incompatible_overload(_err: &TsError, _tokens: &[Token]) -> Option<Su
     })
 }
 
-fn suggest_invalid_shadow(err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_invalid_shadow(err: &TsError) -> Option<Suggestion> {
     let var_name = extract_first_quoted(&err.message).unwrap_or_else(|| "variable".to_string());
 
     Some(Suggestion {
@@ -447,7 +456,7 @@ fn suggest_invalid_shadow(err: &TsError, _tokens: &[Token]) -> Option<Suggestion
     })
 }
 
-fn suggest_nonexistent_module(err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_nonexistent_module(err: &TsError) -> Option<Suggestion> {
     let module_name = extract_first_quoted(&err.message).unwrap_or_else(|| "module".to_string());
 
     Some(Suggestion {
@@ -463,7 +472,7 @@ fn suggest_nonexistent_module(err: &TsError, _tokens: &[Token]) -> Option<Sugges
     })
 }
 
-fn suggest_readonly_property(err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_readonly_property(err: &TsError) -> Option<Suggestion> {
     let property_name =
         extract_first_quoted(&err.message).unwrap_or_else(|| "property".to_string());
 
@@ -480,7 +489,7 @@ fn suggest_readonly_property(err: &TsError, _tokens: &[Token]) -> Option<Suggest
     })
 }
 
-fn suggest_incorrect_interface(err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_incorrect_interface(err: &TsError) -> Option<Suggestion> {
     let class_name = extract_first_quoted(&err.message).unwrap_or_else(|| "class".to_string());
     let interface_name =
         extract_second_quoted(&err.message).unwrap_or_else(|| "interface".to_string());
@@ -503,7 +512,7 @@ fn suggest_incorrect_interface(err: &TsError, _tokens: &[Token]) -> Option<Sugge
     })
 }
 
-fn suggest_property_not_assignable(err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_property_not_assignable(err: &TsError) -> Option<Suggestion> {
     let property = extract_first_quoted(&err.message).unwrap_or_else(|| "property".to_string());
     let impl_type = extract_second_quoted(&err.message).unwrap_or_else(|| "type".to_string());
     let base_type = extract_third_quoted(&err.message).unwrap_or_else(|| "base type".to_string());
@@ -537,7 +546,7 @@ fn suggest_property_not_assignable(err: &TsError, _tokens: &[Token]) -> Option<S
     })
 }
 
-fn suggest_cannot_find_identifier(err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_cannot_find_identifier(err: &TsError) -> Option<Suggestion> {
     let identifier = extract_first_quoted(&err.message).unwrap_or_else(|| "identifier".to_string());
 
     Some(Suggestion {
@@ -553,7 +562,7 @@ fn suggest_cannot_find_identifier(err: &TsError, _tokens: &[Token]) -> Option<Su
     })
 }
 
-fn suggest_missing_return(_err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_missing_return(_err: &TsError) -> Option<Suggestion> {
     Some(Suggestion {
         suggestions: vec!["A return value is missing where one is expected.".to_string()],
         help: Some(
@@ -564,7 +573,7 @@ fn suggest_missing_return(_err: &TsError, _tokens: &[Token]) -> Option<Suggestio
     })
 }
 
-fn suggest_uncallable_expression(err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_uncallable_expression(err: &TsError) -> Option<Suggestion> {
     let expr = extract_first_quoted(&err.message).unwrap_or_else(|| "expression".to_string());
 
     Some(Suggestion {
@@ -580,7 +589,7 @@ fn suggest_uncallable_expression(err: &TsError, _tokens: &[Token]) -> Option<Sug
     })
 }
 
-fn suggest_invalid_index_type(err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_invalid_index_type(err: &TsError) -> Option<Suggestion> {
     let index_type = extract_first_quoted(&err.message).unwrap_or_else(|| "type".to_string());
 
     Some(Suggestion {
@@ -611,7 +620,7 @@ fn suggest_invalid_index_signature(err: &TsError, tokens: &[Token]) -> Option<Su
     })
 }
 
-fn suggest_typo_property(err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_typo_property(err: &TsError) -> Option<Suggestion> {
     let property_name =
         extract_first_quoted(&err.message).unwrap_or_else(|| "property".to_string());
     let type_name = extract_second_quoted(&err.message).unwrap_or_else(|| "type".to_string());
@@ -634,7 +643,7 @@ fn suggest_typo_property(err: &TsError, _tokens: &[Token]) -> Option<Suggestion>
     })
 }
 
-fn suggest_possibly_null(err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_possibly_null(err: &TsError) -> Option<Suggestion> {
     let possible_null_var =
         extract_first_quoted(&err.message).unwrap_or_else(|| "object".to_string());
 
@@ -651,7 +660,7 @@ fn suggest_possibly_null(err: &TsError, _tokens: &[Token]) -> Option<Suggestion>
     })
 }
 
-fn suggest_object_unknown(err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_object_unknown(err: &TsError) -> Option<Suggestion> {
     let unknown_var = extract_first_quoted(&err.message).unwrap_or_else(|| "value".to_string());
 
     Some(Suggestion {
@@ -667,7 +676,7 @@ fn suggest_object_unknown(err: &TsError, _tokens: &[Token]) -> Option<Suggestion
     })
 }
 
-fn suggest_unterminated_string(err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_unterminated_string(err: &TsError) -> Option<Suggestion> {
     let literal =
         extract_first_quoted(&err.message).unwrap_or_else(|| "string literal".to_string());
     Some(Suggestion {
@@ -682,7 +691,7 @@ fn suggest_unterminated_string(err: &TsError, _tokens: &[Token]) -> Option<Sugge
     })
 }
 
-fn suggest_identifier_expected(_err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_identifier_expected() -> Option<Suggestion> {
     Some(Suggestion {
         suggestions: vec!["An identifier was expected at this location in the code.".to_string()],
         help: Some(
@@ -693,7 +702,7 @@ fn suggest_identifier_expected(_err: &TsError, _tokens: &[Token]) -> Option<Sugg
     })
 }
 
-fn suggest_disallowed_comma(_err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_disallowed_comma() -> Option<Suggestion> {
     Some(Suggestion {
         suggestions: vec!["Trailing commas are not allowed in this context.".to_string()],
         help:        Some("Remove the trailing comma to resolve the syntax error.".to_string()),
@@ -701,7 +710,7 @@ fn suggest_disallowed_comma(_err: &TsError, _tokens: &[Token]) -> Option<Suggest
     })
 }
 
-fn suggest_spread_parameter_last(_err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_spread_parameter_last() -> Option<Suggestion> {
     Some(Suggestion {
         suggestions: vec![
             "A spread parameter must be the last parameter in a function signature.".to_string(),
@@ -713,7 +722,7 @@ fn suggest_spread_parameter_last(_err: &TsError, _tokens: &[Token]) -> Option<Su
     })
 }
 
-fn suggest_expression_expected(_err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_expression_expected() -> Option<Suggestion> {
     Some(Suggestion {
         suggestions: vec!["An expression was found but no value is assigned to it.".to_string()],
         help:        Some("Assign a value to the expression.".to_string()),
@@ -721,7 +730,7 @@ fn suggest_expression_expected(_err: &TsError, _tokens: &[Token]) -> Option<Sugg
     })
 }
 
-fn suggest_unique_members(_err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_unique_members() -> Option<Suggestion> {
     Some(Suggestion {
         suggestions: vec!["Consider removing or renaming one of the object members".to_string()],
         help:        Some("An object may contain a member name once.".to_string()),
@@ -743,7 +752,7 @@ fn suggest_uninitialized_const(err: &TsError, tokens: &[Token]) -> Option<Sugges
     })
 }
 
-fn suggest_yield_not_in_generator(_err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_yield_not_in_generator() -> Option<Suggestion> {
     Some(Suggestion {
         suggestions: vec![format!(
             "`{}` can only be used in generator functions",
@@ -758,7 +767,7 @@ fn suggest_yield_not_in_generator(_err: &TsError, _tokens: &[Token]) -> Option<S
     })
 }
 
-fn suggest_jsx_flag(_err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_jsx_flag() -> Option<Suggestion> {
     Some(Suggestion {
         suggestions: vec!["JSX can not be used.".to_string()],
         help:        Some(
@@ -768,7 +777,7 @@ fn suggest_jsx_flag(_err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
     })
 }
 
-fn suggest_declared_unused(err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_declared_unused(err: &TsError) -> Option<Suggestion> {
     let unused_decl = extract_first_quoted(&err.message).unwrap_or("declaration".to_string());
 
     Some(Suggestion {
@@ -781,7 +790,7 @@ fn suggest_declared_unused(err: &TsError, _tokens: &[Token]) -> Option<Suggestio
     })
 }
 
-fn suggest_no_exported_member(err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_no_exported_member(err: &TsError) -> Option<Suggestion> {
     let non_exported_member = extract_quoted_value(&err.message, 3);
     let potential_correction = extract_quoted_value(&err.message, 5);
 
@@ -804,7 +813,7 @@ fn suggest_no_exported_member(err: &TsError, _tokens: &[Token]) -> Option<Sugges
     })
 }
 
-fn suggest_imported_unused(_err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_imported_unused() -> Option<Suggestion> {
     Some(Suggestion {
         suggestions: vec!["This import is unused".to_string()],
         help:        Some("Consider removing it".to_string()),
@@ -812,7 +821,7 @@ fn suggest_imported_unused(_err: &TsError, _tokens: &[Token]) -> Option<Suggesti
     })
 }
 
-fn suggest_invalid_default_import(_err: &TsError, _tokens: &[Token]) -> Option<Suggestion> {
+fn suggest_invalid_default_import() -> Option<Suggestion> {
     Some(Suggestion {
         suggestions: vec![format!(
             "`{}` is missing from compiler configuration, default imports are not allowed.",
