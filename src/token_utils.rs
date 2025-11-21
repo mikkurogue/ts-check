@@ -1,5 +1,7 @@
-use crate::error::TsError;
-use crate::tokenizer::Token;
+use crate::{
+    error::TsError,
+    tokenizer::Token,
+};
 
 /// Find the token at a specific position (line and column)
 pub fn find_token_at_position(tokens: &[Token], line: usize, column: usize) -> Option<&Token> {
@@ -58,9 +60,7 @@ pub fn extract_function_name(err: &TsError, tokens: &[Token], default: &str) -> 
 /// Find the identifier token after a keyword on the given line
 /// Returns both the identifier name and its span
 pub fn find_identifier_after_keyword(
-    tokens: &[Token],
-    line: usize,
-    keyword: &str,
+    tokens: &[Token], line: usize, keyword: &str,
 ) -> Option<(String, std::ops::Range<usize>)> {
     let mut found_keyword = false;
 
@@ -94,31 +94,25 @@ mod tests {
     fn test_find_token_at_position() {
         let tokens = vec![
             Token {
-                kind: TokenKind::Keyword,
-                raw: "let".to_string(),
-                start: 0,
-                end: 3,
-                line: 1,
+                kind:   TokenKind::Keyword,
+                raw:    "let".to_string(),
+                start:  0,
+                end:    3,
+                line:   1,
                 column: 0,
             },
             Token {
-                kind: TokenKind::Identifier,
-                raw: "x".to_string(),
-                start: 4,
-                end: 5,
-                line: 1,
+                kind:   TokenKind::Identifier,
+                raw:    "x".to_string(),
+                start:  4,
+                end:    5,
+                line:   1,
                 column: 4,
             },
         ];
 
-        assert_eq!(
-            find_token_at_position(&tokens, 1, 0).map(|t| &t.raw),
-            Some(&"let".to_string())
-        );
-        assert_eq!(
-            find_token_at_position(&tokens, 1, 4).map(|t| &t.raw),
-            Some(&"x".to_string())
-        );
+        assert_eq!(find_token_at_position(&tokens, 1, 0).map(|t| &t.raw), Some(&"let".to_string()));
+        assert_eq!(find_token_at_position(&tokens, 1, 4).map(|t| &t.raw), Some(&"x".to_string()));
         assert_eq!(find_token_at_position(&tokens, 1, 10), None);
     }
 
@@ -126,19 +120,19 @@ mod tests {
     fn test_find_token_after_keyword() {
         let tokens = vec![
             Token {
-                kind: TokenKind::Keyword,
-                raw: "function".to_string(),
-                start: 0,
-                end: 8,
-                line: 1,
+                kind:   TokenKind::Keyword,
+                raw:    "function".to_string(),
+                start:  0,
+                end:    8,
+                line:   1,
                 column: 0,
             },
             Token {
-                kind: TokenKind::Identifier,
-                raw: "myFunc".to_string(),
-                start: 9,
-                end: 15,
-                line: 1,
+                kind:   TokenKind::Identifier,
+                raw:    "myFunc".to_string(),
+                start:  9,
+                end:    15,
+                line:   1,
                 column: 9,
             },
         ];
@@ -151,19 +145,19 @@ mod tests {
     fn test_find_token_after_keyword_not_found() {
         let tokens = vec![
             Token {
-                kind: TokenKind::Keyword,
-                raw: "let".to_string(),
-                start: 0,
-                end: 3,
-                line: 1,
+                kind:   TokenKind::Keyword,
+                raw:    "let".to_string(),
+                start:  0,
+                end:    3,
+                line:   1,
                 column: 0,
             },
             Token {
-                kind: TokenKind::Identifier,
-                raw: "x".to_string(),
+                kind:  TokenKind::Identifier,
+                raw:   "x".to_string(),
                 start: 4,
-                end: 5,
-                line: 1,
+                end:   5,
+                line:  1,
 
                 column: 4,
             },

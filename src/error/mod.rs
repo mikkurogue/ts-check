@@ -3,6 +3,7 @@ pub mod core;
 pub mod diagnostics;
 
 pub use core::TsError;
+
 pub use diagnostics::ErrorDiagnostic;
 
 use super::ErrorCode;
@@ -15,10 +16,10 @@ pub fn parse(line: &str) -> Option<TsError> {
     let (code, msg) = rest.split_once(": ")?;
 
     Some(TsError {
-        file: file.to_string(),
-        line: usize::from_str_radix(line_s, 10).ok()?,
-        column: usize::from_str_radix(col_s, 10).ok()?,
-        code: ErrorCode::from_str(code),
+        file:    file.to_string(),
+        line:    usize::from_str_radix(line_s, 10).ok()?,
+        column:  usize::from_str_radix(col_s, 10).ok()?,
+        code:    ErrorCode::from_str(code),
         message: msg.to_string(),
     })
 }

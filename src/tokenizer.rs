@@ -14,21 +14,21 @@ pub enum TokenKind {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
-    pub kind: TokenKind,
-    pub raw: String,
-    pub start: usize,
-    pub end: usize,
-    pub line: usize,
+    pub kind:   TokenKind,
+    pub raw:    String,
+    pub start:  usize,
+    pub end:    usize,
+    pub line:   usize,
     pub column: usize,
 }
 
 #[derive(Debug, Clone)]
 pub struct Tokenizer {
     /// The source code being tokenized from file reader
-    pub src: String,
+    pub src:      String,
     pub position: usize,
-    pub line: usize,
-    pub column: usize,
+    pub line:     usize,
+    pub column:   usize,
 }
 
 impl Tokenizer {

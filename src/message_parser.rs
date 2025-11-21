@@ -163,9 +163,6 @@ mod tests {
     #[test]
     fn test_parse_property_missing_error() {
         let msg = "Property 'x' is missing in type 'MyType' but required in type 'OtherType'.";
-        assert_eq!(
-            parse_property_missing_error(msg),
-            Some("OtherType".to_string())
-        );
+        assert_eq!(parse_property_missing_error(msg), Some("OtherType".to_string()));
     }
 }

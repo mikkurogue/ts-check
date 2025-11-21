@@ -15,7 +15,8 @@ mod tokenizer;
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
-    /// Optional file to read TSC error output from. If not provided, runs `tsc` in the current directory.
+    /// Optional file to read TSC error output from. If not provided, runs `tsc` in the current
+    /// directory.
     input: Option<String>,
 
     /// Format a diagnostic from LSP instead of running tsc
@@ -64,11 +65,7 @@ fn main() -> Result<()> {
 }
 
 fn format_lsp_diagnostic(
-    file: String,
-    line: usize,
-    column: usize,
-    code: String,
-    message: String,
+    file: String, line: usize, column: usize, code: String, message: String,
 ) -> Result<()> {
     let parsed = error::TsError {
         file,

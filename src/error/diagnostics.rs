@@ -1,4 +1,8 @@
-use crate::{error::core::TsError, suggestion::Suggestion, tokenizer::Token};
+use crate::{
+    error::core::TsError,
+    suggestion::Suggestion,
+    tokenizer::Token,
+};
 
 /// Trait that implements diagnostics for TS Errors
 pub trait ErrorDiagnostic {

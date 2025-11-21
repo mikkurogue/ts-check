@@ -1,7 +1,19 @@
-use crate::error::{ErrorDiagnostic, TsError};
-use crate::tokenizer::Tokenizer;
-use ariadne::{Color, Label, Report, ReportKind, Source};
+use ariadne::{
+    Color,
+    Label,
+    Report,
+    ReportKind,
+    Source,
+};
 use colored::*;
+
+use crate::{
+    error::{
+        ErrorDiagnostic,
+        TsError,
+    },
+    tokenizer::Tokenizer,
+};
 
 /// Pretty format
 pub fn fmt(err: &TsError) -> String {
