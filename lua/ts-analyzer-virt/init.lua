@@ -142,10 +142,14 @@ local function show_enhanced_diagnostic(bufnr, diag, enhanced_text)
     buffer_diagnostics[bufnr] = {}
   end
   
-  buffer_diagnostics[bufnr][line_num] = {
+  if not buffer_diagnostics[bufnr][line_num] then
+    buffer_diagnostics[bufnr][line_num] = {}
+  end
+  
+  table.insert(buffer_diagnostics[bufnr][line_num], {
     snippet = snippet,
     diag = diag,
-  }
+  })
   
   -- Highlight the error range in the buffer
   highlight_error_range(bufnr, diag)
@@ -153,15 +157,22 @@ end
 
 -- Show virtual text when cursor is on the diagnostic line
 local function show_virt_text_on_hover(bufnr, line_num)
-  local data = buffer_diagnostics[bufnr] and buffer_diagnostics[bufnr][line_num]
-  if not data then
+  local diagnostics_on_line = buffer_diagnostics[bufnr] and buffer_diagnostics[bufnr][line_num]
+  if not diagnostics_on_line or #diagnostics_on_line == 0 then
     return
   end
   
-  -- Create virtual lines with colorized chunks
+  -- Create virtual lines with colorized chunks for all diagnostics on this line
   local virt_lines = {}
-  for _, line in ipairs(data.snippet) do
-    table.insert(virt_lines, colorize_line(line))
+  for i, data in ipairs(diagnostics_on_line) do
+    for _, line in ipairs(data.snippet) do
+      table.insert(virt_lines, colorize_line(line))
+    end
+    
+    -- Add a blank line separator between multiple diagnostics (except after the last one)
+    if i < #diagnostics_on_line then
+      table.insert(virt_lines, {{ "", "Normal" }})
+    end
   end
   
   -- Place virtual lines at the diagnostic position
@@ -178,8 +189,10 @@ local function clear_hover_virt_text(bufnr)
   
   -- Re-apply highlights
   if buffer_diagnostics[bufnr] then
-    for _, data in pairs(buffer_diagnostics[bufnr]) do
-      highlight_error_range(bufnr, data.diag)
+    for _, diagnostics_on_line in pairs(buffer_diagnostics[bufnr]) do
+      for _, data in ipairs(diagnostics_on_line) do
+        highlight_error_range(bufnr, data.diag)
+      end
     end
   end
 end
