@@ -1,7 +1,5 @@
-use crate::parser::CommonErrors;
-use crate::suggestion::Suggestion;
+use crate::error::{ErrorDiagnostic, TsError};
 use crate::tokenizer::Tokenizer;
-use crate::{parser::TsError, suggestion::Suggest};
 use ariadne::{Color, Label, Report, ReportKind, Source};
 use colored::*;
 
@@ -51,7 +49,7 @@ pub fn fmt(err: &TsError) -> String {
         byte_offset.max(1) - 1..byte_offset
     });
 
-    let suggestion = Suggestion::build(err, &tokens);
+    let suggestion = err.code.suggest(err, &tokens);
 
     let mut buf = Vec::new();
 
@@ -62,7 +60,7 @@ pub fn fmt(err: &TsError) -> String {
         .unwrap_or_else(|| span.clone());
 
     let mut report = Report::build(ReportKind::Error, (&err.file, span.clone()))
-        .with_code(&err.code)
+        .with_code(err.code)
         .with_message(&err.message);
 
     if let Some(ref s) = suggestion {
@@ -105,33 +103,16 @@ pub fn fmt(err: &TsError) -> String {
 
 /// Simple formatting without src extraction
 fn fmt_simple(err: &TsError) -> String {
-    let mut out = String::new();
-    let code_str = CommonErrors::from_code(&err.code.to_string());
-
-    out.push_str(&format!(
-        "{}:{}:{} - {} {}: {}\n",
+    format!(
+        "{}:{}:{} - {} {}: {}\n  --> {}:{}:{}\n      |\n      = TypeScript compiler error\n",
         err.file.cyan(),
         err.line.to_string().yellow(),
         err.column.to_string().yellow(),
         "error".red().bold(),
-        code_str.to_string().red().bold(),
-        err.message
-    ));
-
-    out.push_str(&format!(
-        "  --> {}:{}:{}\n",
+        err.code.to_string().red().bold(),
+        err.message,
         err.file.cyan(),
         err.line.to_string().cyan(),
         err.column.to_string().cyan()
-    ));
-
-    // MVP: We do not extract source code yet — that’s a next step.
-    out.push_str("      |\n");
-    out.push_str(&format!(
-        "{} {}\n",
-        "      =".purple(),
-        "TypeScript compiler error"
-    ));
-
-    out
+    )
 }
