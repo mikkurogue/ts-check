@@ -111,8 +111,14 @@ mod tests {
             },
         ];
 
-        assert_eq!(find_token_at_position(&tokens, 1, 0).map(|t| &t.raw), Some(&"let".to_string()));
-        assert_eq!(find_token_at_position(&tokens, 1, 4).map(|t| &t.raw), Some(&"x".to_string()));
+        assert_eq!(
+            find_token_at_position(&tokens, 1, 0).map(|t| &t.raw),
+            Some(&"let".to_string())
+        );
+        assert_eq!(
+            find_token_at_position(&tokens, 1, 4).map(|t| &t.raw),
+            Some(&"x".to_string())
+        );
         assert_eq!(find_token_at_position(&tokens, 1, 10), None);
     }
 

@@ -735,7 +735,10 @@ fn suggest_uninitialized_const(err: &TsError, tokens: &[Token]) -> Option<Sugges
 
     Some(Suggestion {
         suggestions: vec![format!("`{}` must be initialized", name.red().bold())],
-        help:        Some(format!("Initialize `{}` with a value", name.yellow().bold())),
+        help:        Some(format!(
+            "Initialize `{}` with a value",
+            name.yellow().bold()
+        )),
         span:        Some(span),
     })
 }
