@@ -68,9 +68,9 @@ impl ErrorDiagnostic for ErrorCode {
             ErrorCode::NoExportedMember => suggest_no_exported_member(err),
             ErrorCode::ImportedButNeverUsed => suggest_imported_unused(),
             ErrorCode::InvalidDefaultImport => suggest_invalid_default_import(),
-            ErrorCode::UnreachableCode => unreachable_suggestion(),
-            ErrorCode::TypeAssertionInJsNotAllowed => type_assertion_in_js_not_allowed_suggestion(),
-            ErrorCode::MappedTypeMustBeStatic => mapped_type_must_be_static_suggestion(),
+            ErrorCode::UnreachableCode => suggest_unreachable(),
+            ErrorCode::TypeAssertionInJsNotAllowed => suggest_type_assertion_in_js_not_allowed(),
+            ErrorCode::MappedTypeMustBeStatic => suggest_mapped_type_must_be_static(),
             ErrorCode::ElementImplicitAnyInvalidIndexTypeForObject => {
                 suggest_element_implicit_any_invalid_index_type_for_object(err)
             }
