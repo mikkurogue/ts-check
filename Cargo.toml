@@ -14,3 +14,10 @@ serde_json = "1.0.145"
 [[bin]]
 name = "ts-analyzer"
 path = "src/main.rs" 
+
+[workspace.metadata.clippy]
+allow = ["clippy::unnecessary_radix"]
+deny = [
+    "clippy::unwrap_used",
+    "clippy::expect_used"
+]

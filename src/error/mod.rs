@@ -2,8 +2,10 @@ pub mod codes;
 pub mod core;
 pub mod diagnostics;
 
-pub use core::{ErrorCode, TsError};
+pub use core::TsError;
 pub use diagnostics::ErrorDiagnostic;
+
+use super::ErrorCode;
 
 /// Parse a TSC error line
 pub fn parse(line: &str) -> Option<TsError> {

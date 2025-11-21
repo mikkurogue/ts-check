@@ -2,11 +2,7 @@ use crate::error::TsError;
 use crate::tokenizer::Token;
 
 /// Find the token at a specific position (line and column)
-pub fn find_token_at_position(
-    tokens: &[Token],
-    line: usize,
-    column: usize,
-) -> Option<&Token> {
+pub fn find_token_at_position(tokens: &[Token], line: usize, column: usize) -> Option<&Token> {
     tokens.iter().find(|token| {
         token.line == line
             && column >= token.column
@@ -15,11 +11,7 @@ pub fn find_token_at_position(
 }
 
 /// Find a function/identifier token before the given position (searches backwards)
-pub fn find_function_name_before(
-    tokens: &[Token],
-    line: usize,
-    column: usize,
-) -> Option<&Token> {
+pub fn find_function_name_before(tokens: &[Token], line: usize, column: usize) -> Option<&Token> {
     // Search backwards from the error position for an identifier before a '('
     let mut found_paren = false;
 

@@ -1,8 +1,5 @@
 use crate::{
-    error::{
-        core::{ErrorCode, TsError},
-        diagnostics::ErrorDiagnostic,
-    },
+    error::{codes::ErrorCode, core::TsError, diagnostics::ErrorDiagnostic},
     message_parser::{
         extract_first_quoted, extract_quoted_value, extract_second_quoted, extract_third_quoted,
         parse_property_missing_error, parse_ts2322_error, parse_ts2345_error,

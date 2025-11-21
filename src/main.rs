@@ -2,6 +2,8 @@ use anyhow::Result;
 use clap::Parser;
 use colored::*;
 
+use crate::error::codes::ErrorCode;
+
 mod diagnostics;
 mod error;
 mod formatter;
@@ -9,8 +11,6 @@ mod message_parser;
 mod suggestion;
 mod token_utils;
 mod tokenizer;
-
-use error::ErrorCode;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]

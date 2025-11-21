@@ -97,9 +97,10 @@ pub fn parse_ts2345_error(msg: &str) -> Option<Vec<(String, String, String)>> {
     let mut mismatches = Vec::new();
     for (key, expected_type) in &expected_props {
         if let Some(provided_type) = provided_props.get(key)
-            && provided_type != expected_type {
-                mismatches.push((key.clone(), provided_type.clone(), expected_type.clone()));
-            }
+            && provided_type != expected_type
+        {
+            mismatches.push((key.clone(), provided_type.clone(), expected_type.clone()));
+        }
     }
 
     Some(mismatches)

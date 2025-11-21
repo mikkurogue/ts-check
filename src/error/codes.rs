@@ -1,5 +1,61 @@
-use crate::error::core::ErrorCode;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ErrorCode {
+    // type errors
+    TypeMismatch,
+    InlineTypeMismatch,
+    PropertyMissingInType,
+    PropertyDoesNotExist,
 
+    // null safety
+    ObjectIsPossiblyNull,
+    ObjectIsPossiblyUndefined,
+    ObjectIsUnknown,
+
+    // Function/parameter errors (TS25xx range)
+    MissingParameters,
+    IncompatibleOverload,
+    UncallableExpression,
+
+    // Syntax errors (TS1xxx range)
+    UnterminatedStringLiteral,
+    IdentifierExpected,
+    ExpressionExpected,
+    DisallowedTrailingComma,
+    SpreadParameterMustBeLast,
+
+    // Module/import errors (TS23xx, TS6xxx)
+    NonExistentModuleImport,
+    NoExportedMember,
+    InvalidDefaultImport,
+
+    // Class/interface errors
+    IncorrectInterfaceImplementation,
+    PropertyInClassNotAssignableToBase,
+    ReadonlyPropertyAssignment,
+
+    // Misc
+    NoImplicitAny,
+    UnintentionalComparison,
+    DirectCastPotentiallyMistaken,
+    SpreadArgumentMustBeTupleType,
+    RightSideArithmeticMustBeEnumberable,
+    LeftSideArithmeticMustBeEnumberable,
+    InvalidShadowInScope,
+    CannotFindIdentifier,
+    MissingReturnValue,
+    InvalidIndexType,
+    InvalidIndexTypeSignature,
+    TypoPropertyOnType,
+    UniqueObjectMemberNames,
+    UninitializedConst,
+    YieldNotInGenerator,
+    JsxFlagNotProvided,
+    DeclaredButNeverUsed,
+    ImportedButNeverUsed,
+
+    /// Catch-all for unsupported error codes
+    Unsupported(u16),
+}
 impl ErrorCode {
     /// Create an `ErrorCode` from a string represenatation like "TS2322"
     pub fn from_str(code: &str) -> Self {
@@ -46,9 +102,10 @@ impl ErrorCode {
 
             other => {
                 if let Some(num_str) = other.strip_prefix("TS")
-                    && let Ok(num) = num_str.parse::<u16>() {
-                        return ErrorCode::Unsupported(num);
-                    }
+                    && let Ok(num) = num_str.parse::<u16>()
+                {
+                    return ErrorCode::Unsupported(num);
+                }
                 ErrorCode::Unsupported(0)
             }
         }
