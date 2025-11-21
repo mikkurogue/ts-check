@@ -2,12 +2,15 @@ use anyhow::Result;
 use clap::Parser;
 use colored::*;
 
+mod diagnostics;
+mod error;
 mod formatter;
 mod message_parser;
-mod parser;
 mod suggestion;
 mod token_utils;
 mod tokenizer;
+
+use error::ErrorCode;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -67,11 +70,11 @@ fn format_lsp_diagnostic(
     code: String,
     message: String,
 ) -> Result<()> {
-    let parsed = parser::TsError {
+    let parsed = error::TsError {
         file,
         line,
         column,
-        code: parser::CommonErrors::from_code(&code),
+        code: ErrorCode::from_str(&code),
         message,
     };
 
@@ -137,7 +140,7 @@ fn parse_tsc_output(input: Option<String>) -> Result<()> {
     let mut i = 0;
 
     while i < lines.len() {
-        if let Some(mut parsed) = parser::parse(lines[i]) {
+        if let Some(mut parsed) = error::parse(lines[i]) {
             found_error = true;
             counter += 1;
 
