@@ -77,9 +77,39 @@ impl ErrorDiagnostic for ErrorCode {
             ErrorCode::MissingJsxIntrinsicElementsDeclaration => {
                 suggest_missing_jsx_intrinsic_elements_declaration()
             }
+            ErrorCode::ConstEnumsDisallowed => suggest_const_enums_disallowed(),
+            ErrorCode::JsxModuleNotSet => suggest_jsx_not_set(err),
             ErrorCode::Unsupported(_) => None,
         }
     }
+}
+
+fn suggest_jsx_not_set(err: &TsError) -> Option<Suggestion> {
+    let module_name = extract_first_quoted(&err.message)?;
+    let resolved_name = extract_second_quoted(&err.message)?;
+
+    Some(Suggestion {
+        suggestions: vec![format!(
+            "Module `{}` is resolved to `{}` but jsx compiler flag is not set.",
+            module_name.red().bold(),
+            resolved_name.red().bold()
+        )],
+        help:        Some("Enable `--jsx` compiler flag or add jsx to tsconfig.json".to_string()),
+        span:        None,
+    })
+}
+
+/// Suggestion for when isolatedModules is enabled and ambiend const enums are used.
+fn suggest_const_enums_disallowed() -> Option<Suggestion> {
+    Some(Suggestion {
+        suggestions: vec![
+            "Disable `isolatedModules` as a compiler setting to allow const enums.".to_string(),
+        ],
+        help:        Some(
+            "Const enums are not valid when `isolatedModules` is enabled.".to_string(),
+        ),
+        span:        None,
+    })
 }
 
 /// Suggestion for missing JSX intrinsic elements declaration
@@ -100,11 +130,10 @@ fn suggest_missing_jsx_intrinsic_elements_declaration() -> Option<Suggestion> {
 /// Suggestion for when element is implicitly any and that index type is invalid for indexing
 /// object
 fn suggest_element_implicit_any_invalid_index_type_for_object(err: &TsError) -> Option<Suggestion> {
-    let implicit_type = extract_quoted_value(&err.message, 1).unwrap_or_else(|| "any".to_string());
+    let implicit_type = extract_quoted_value(&err.message, 1)?;
 
-    let index_type = extract_quoted_value(&err.message, 3).unwrap_or_else(|| "type".to_string());
-    let object_to_index =
-        extract_quoted_value(&err.message, 6).unwrap_or_else(|| "object".to_string());
+    let index_type = extract_quoted_value(&err.message, 3)?;
+    let object_to_index = extract_quoted_value(&err.message, 6)?;
 
     Some(Suggestion {
         suggestions: vec![format!(
@@ -357,7 +386,7 @@ fn suggest_missing_parameters(err: &TsError, tokens: &[Token]) -> Option<Suggest
 }
 
 fn suggest_no_implicit_any(err: &TsError) -> Option<Suggestion> {
-    let param_name = extract_first_quoted(&err.message).unwrap_or_else(|| "parameter".to_string());
+    let param_name = extract_first_quoted(&err.message)?;
 
     Some(Suggestion {
         suggestions: vec![format!("{} is implicitly `any`.", param_name.red().bold())],
@@ -411,9 +440,8 @@ fn suggest_unintentional_comparison() -> Option<Suggestion> {
 }
 
 fn suggest_property_does_not_exist(err: &TsError) -> Option<Suggestion> {
-    let property_name =
-        extract_first_quoted(&err.message).unwrap_or_else(|| "property".to_string());
-    let type_name = extract_second_quoted(&err.message).unwrap_or_else(|| "type".to_string());
+    let property_name = extract_first_quoted(&err.message)?;
+    let type_name = extract_second_quoted(&err.message)?;
 
     Some(Suggestion {
         suggestions: vec![format!(
@@ -430,8 +458,7 @@ fn suggest_property_does_not_exist(err: &TsError) -> Option<Suggestion> {
 }
 
 fn suggest_possibly_undefined(err: &TsError) -> Option<Suggestion> {
-    let possible_undefined_var =
-        extract_first_quoted(&err.message).unwrap_or_else(|| "object".to_string());
+    let possible_undefined_var = extract_first_quoted(&err.message)?;
 
     Some(Suggestion {
         suggestions: vec![format!(
@@ -447,8 +474,8 @@ fn suggest_possibly_undefined(err: &TsError) -> Option<Suggestion> {
 }
 
 fn suggest_direct_cast_mistaken(err: &TsError) -> Option<Suggestion> {
-    let cast_from_type = extract_first_quoted(&err.message).unwrap_or_else(|| "type".to_string());
-    let cast_to_type = extract_second_quoted(&err.message).unwrap_or_else(|| "type".to_string());
+    let cast_from_type = extract_first_quoted(&err.message)?;
+    let cast_to_type = extract_second_quoted(&err.message)?;
 
     Some(Suggestion {
         suggestions: vec![format!(
@@ -520,7 +547,7 @@ fn suggest_incompatible_overload(_err: &TsError) -> Option<Suggestion> {
 }
 
 fn suggest_invalid_shadow(err: &TsError) -> Option<Suggestion> {
-    let var_name = extract_first_quoted(&err.message).unwrap_or_else(|| "variable".to_string());
+    let var_name = extract_first_quoted(&err.message)?;
 
     Some(Suggestion {
         suggestions: vec![format!(
@@ -536,7 +563,7 @@ fn suggest_invalid_shadow(err: &TsError) -> Option<Suggestion> {
 }
 
 fn suggest_nonexistent_module(err: &TsError) -> Option<Suggestion> {
-    let module_name = extract_first_quoted(&err.message).unwrap_or_else(|| "module".to_string());
+    let module_name = extract_first_quoted(&err.message)?;
 
     Some(Suggestion {
         suggestions: vec![format!(
@@ -552,8 +579,7 @@ fn suggest_nonexistent_module(err: &TsError) -> Option<Suggestion> {
 }
 
 fn suggest_readonly_property(err: &TsError) -> Option<Suggestion> {
-    let property_name =
-        extract_first_quoted(&err.message).unwrap_or_else(|| "property".to_string());
+    let property_name = extract_first_quoted(&err.message)?;
 
     Some(Suggestion {
         suggestions: vec![format!(
@@ -569,11 +595,9 @@ fn suggest_readonly_property(err: &TsError) -> Option<Suggestion> {
 }
 
 fn suggest_incorrect_interface(err: &TsError) -> Option<Suggestion> {
-    let class_name = extract_first_quoted(&err.message).unwrap_or_else(|| "class".to_string());
-    let interface_name =
-        extract_second_quoted(&err.message).unwrap_or_else(|| "interface".to_string());
-    let missing_property =
-        extract_third_quoted(&err.message).unwrap_or_else(|| "property".to_string());
+    let class_name = extract_first_quoted(&err.message)?;
+    let interface_name = extract_second_quoted(&err.message)?;
+    let missing_property = extract_third_quoted(&err.message)?;
 
     Some(Suggestion {
         suggestions: vec![format!(
@@ -592,13 +616,11 @@ fn suggest_incorrect_interface(err: &TsError) -> Option<Suggestion> {
 }
 
 fn suggest_property_not_assignable(err: &TsError) -> Option<Suggestion> {
-    let property = extract_first_quoted(&err.message).unwrap_or_else(|| "property".to_string());
-    let impl_type = extract_second_quoted(&err.message).unwrap_or_else(|| "type".to_string());
-    let base_type = extract_third_quoted(&err.message).unwrap_or_else(|| "base type".to_string());
-    let property_impl_type =
-        extract_quoted_value(&err.message, 7).unwrap_or_else(|| "type".to_string());
-    let property_base_type =
-        extract_quoted_value(&err.message, 9).unwrap_or_else(|| "base type".to_string());
+    let property = extract_first_quoted(&err.message)?;
+    let impl_type = extract_second_quoted(&err.message)?;
+    let base_type = extract_third_quoted(&err.message)?;
+    let property_impl_type = extract_quoted_value(&err.message, 7)?;
+    let property_base_type = extract_quoted_value(&err.message, 9)?;
 
     Some(Suggestion {
         suggestions: vec![
@@ -626,7 +648,7 @@ fn suggest_property_not_assignable(err: &TsError) -> Option<Suggestion> {
 }
 
 fn suggest_cannot_find_identifier(err: &TsError) -> Option<Suggestion> {
-    let identifier = extract_first_quoted(&err.message).unwrap_or_else(|| "identifier".to_string());
+    let identifier = extract_first_quoted(&err.message)?;
 
     Some(Suggestion {
         suggestions: vec![format!(
@@ -653,7 +675,7 @@ fn suggest_missing_return(_err: &TsError) -> Option<Suggestion> {
 }
 
 fn suggest_uncallable_expression(err: &TsError) -> Option<Suggestion> {
-    let expr = extract_first_quoted(&err.message).unwrap_or_else(|| "expression".to_string());
+    let expr = extract_first_quoted(&err.message)?;
 
     Some(Suggestion {
         suggestions: vec![format!(
@@ -669,7 +691,7 @@ fn suggest_uncallable_expression(err: &TsError) -> Option<Suggestion> {
 }
 
 fn suggest_invalid_index_type(err: &TsError) -> Option<Suggestion> {
-    let index_type = extract_first_quoted(&err.message).unwrap_or_else(|| "type".to_string());
+    let index_type = extract_first_quoted(&err.message)?;
 
     Some(Suggestion {
         suggestions: vec![format!(
@@ -684,10 +706,8 @@ fn suggest_invalid_index_type(err: &TsError) -> Option<Suggestion> {
 fn suggest_invalid_index_signature(err: &TsError, tokens: &[Token]) -> Option<Suggestion> {
     let adjusted_column = err.column.saturating_sub(1);
     let token = find_token_at_position(tokens, err.line, adjusted_column);
-    let span_text = token
-        .map(|t| t.raw.clone())
-        .unwrap_or_else(|| "property".to_string());
-    let span = token.map(|t| t.start..t.end).unwrap_or_else(|| 0..0);
+    let span_text = token.map(|t| t.raw.clone())?;
+    let span = token.map(|t| t.start..t.end)?;
 
     Some(Suggestion {
         suggestions: vec![format!(
@@ -700,11 +720,9 @@ fn suggest_invalid_index_signature(err: &TsError, tokens: &[Token]) -> Option<Su
 }
 
 fn suggest_typo_property(err: &TsError) -> Option<Suggestion> {
-    let property_name =
-        extract_first_quoted(&err.message).unwrap_or_else(|| "property".to_string());
-    let type_name = extract_second_quoted(&err.message).unwrap_or_else(|| "type".to_string());
-    let suggested_property_name =
-        extract_third_quoted(&err.message).unwrap_or_else(|| "property".to_string());
+    let property_name = extract_first_quoted(&err.message)?;
+    let type_name = extract_second_quoted(&err.message)?;
+    let suggested_property_name = extract_third_quoted(&err.message)?;
 
     Some(Suggestion {
         suggestions: vec![format!(
@@ -723,8 +741,7 @@ fn suggest_typo_property(err: &TsError) -> Option<Suggestion> {
 }
 
 fn suggest_possibly_null(err: &TsError) -> Option<Suggestion> {
-    let possible_null_var =
-        extract_first_quoted(&err.message).unwrap_or_else(|| "object".to_string());
+    let possible_null_var = extract_first_quoted(&err.message)?;
 
     Some(Suggestion {
         suggestions: vec![format!(
@@ -740,7 +757,7 @@ fn suggest_possibly_null(err: &TsError) -> Option<Suggestion> {
 }
 
 fn suggest_object_unknown(err: &TsError) -> Option<Suggestion> {
-    let unknown_var = extract_first_quoted(&err.message).unwrap_or_else(|| "value".to_string());
+    let unknown_var = extract_first_quoted(&err.message)?;
 
     Some(Suggestion {
         suggestions: vec![format!(
@@ -756,8 +773,7 @@ fn suggest_object_unknown(err: &TsError) -> Option<Suggestion> {
 }
 
 fn suggest_unterminated_string(err: &TsError) -> Option<Suggestion> {
-    let literal =
-        extract_first_quoted(&err.message).unwrap_or_else(|| "string literal".to_string());
+    let literal = extract_first_quoted(&err.message)?;
     Some(Suggestion {
         suggestions: vec![format!(
             "String {} is missing \" to close the string.",
@@ -818,8 +834,7 @@ fn suggest_unique_members() -> Option<Suggestion> {
 }
 
 fn suggest_uninitialized_const(err: &TsError, tokens: &[Token]) -> Option<Suggestion> {
-    let (name, span) = find_identifier_after_keyword(tokens, err.line, "const")
-        .unwrap_or_else(|| ("const".to_string(), 0..0));
+    let (name, span) = find_identifier_after_keyword(tokens, err.line, "const")?;
 
     Some(Suggestion {
         suggestions: vec![format!("`{}` must be initialized", name.red().bold())],
@@ -857,7 +872,7 @@ fn suggest_jsx_flag() -> Option<Suggestion> {
 }
 
 fn suggest_declared_unused(err: &TsError) -> Option<Suggestion> {
-    let unused_decl = extract_first_quoted(&err.message).unwrap_or("declaration".to_string());
+    let unused_decl = extract_first_quoted(&err.message)?;
 
     Some(Suggestion {
         suggestions: vec![format!("`{}` is unused", unused_decl.red().bold())],
@@ -876,17 +891,11 @@ fn suggest_no_exported_member(err: &TsError) -> Option<Suggestion> {
     Some(Suggestion {
         suggestions: vec![format!(
             "`{}` is not exported from the module.",
-            non_exported_member
-                .unwrap_or("member".to_string())
-                .red()
-                .bold()
+            non_exported_member?.red().bold()
         )],
         help:        Some(format!(
             "Did you mean to import `{}`?",
-            potential_correction
-                .unwrap_or("member".to_string())
-                .green()
-                .bold()
+            potential_correction?.green().bold()
         )),
         span:        None,
     })

@@ -55,10 +55,12 @@ pub enum ErrorCode {
     DeclaredButNeverUsed,
     ImportedButNeverUsed,
     UnreachableCode,
+    ConstEnumsDisallowed,
 
     // JSX related
     JsxFlagNotProvided,
     MissingJsxIntrinsicElementsDeclaration,
+    JsxModuleNotSet,
 
     /// Catch-all for unsupported error codes
     Unsupported(u16),
@@ -111,6 +113,8 @@ impl ErrorCode {
             "TS7061" => ErrorCode::MappedTypeMustBeStatic,
             "TS7053" => ErrorCode::ElementImplicitAnyInvalidIndexTypeForObject,
             "TS7026" => ErrorCode::MissingJsxIntrinsicElementsDeclaration,
+            "TS6244" => ErrorCode::ConstEnumsDisallowed,
+            "TS6142" => ErrorCode::JsxModuleNotSet,
 
             other => {
                 if let Some(num_str) = other.strip_prefix("TS")
@@ -170,6 +174,8 @@ impl ErrorCode {
             ErrorCode::MappedTypeMustBeStatic => "TS7061",
             ErrorCode::ElementImplicitAnyInvalidIndexTypeForObject => "TS7053",
             ErrorCode::MissingJsxIntrinsicElementsDeclaration => "TS7026",
+            ErrorCode::ConstEnumsDisallowed => "TS6244",
+            ErrorCode::JsxModuleNotSet => "TS6142",
             ErrorCode::Unsupported(_) => {
                 // This will return a static string for known codes, but for unsupported codes,
                 // we return a dynamically allocated string. To keep the return type consistent,
