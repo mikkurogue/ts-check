@@ -87,9 +87,28 @@ impl ErrorDiagnostic for ErrorCode {
             ErrorCode::InvalidOperatorUsage => suggest_invaid_operator_usage(err),
             ErrorCode::UnionTooComplex => suggest_union_too_complex(),
             ErrorCode::JsxElementIsNotCallable => suggest_jsx_element_not_a_fn(err),
+            ErrorCode::InvalidJsxConfigurationUmd => suggest_jsx_incorrect_configuration_umd(err),
             ErrorCode::Unsupported(_) => None,
         }
     }
+}
+
+/// Suggestion for when jsx is configured incorrectly and the requested module is resolved to a UMD
+/// global.
+fn suggest_jsx_incorrect_configuration_umd(err: &TsError) -> Option<Suggestion> {
+    let module_name = extract_first_quoted(&err.message)?;
+
+    Some(Suggestion {
+        suggestions: vec![
+            format!(
+                "`{}` refers to a UMD global, current file is a module.",
+                module_name.red().bold(),
+            ),
+            format!("Consider using `{}` instead.", "import".yellow().bold()),
+        ],
+        help:        Some("Double check tsconfig.json for jsx configuration.".to_string()),
+        span:        None,
+    })
 }
 
 /// Suggestion for when using a JSX element as a function but this has no callable signature

@@ -67,6 +67,7 @@ pub enum ErrorCode {
     MissingJsxIntrinsicElementsDeclaration,
     JsxModuleNotSet,
     JsxElementIsNotCallable,
+    InvalidJsxConfigurationUmd,
 
     /// Catch-all for unsupported error codes
     Unsupported(u16),
@@ -128,6 +129,7 @@ impl ErrorCode {
             "TS2365" => ErrorCode::InvalidOperatorUsage,
             "TS2590" => ErrorCode::UnionTooComplex,
             "TS2604" => ErrorCode::JsxElementIsNotCallable,
+            "TS2686" => ErrorCode::InvalidJsxConfigurationUmd,
 
             other => {
                 if let Some(num_str) = other.strip_prefix("TS")
@@ -195,6 +197,7 @@ impl ErrorCode {
             ErrorCode::InvalidOperatorUsage => "TS2365",
             ErrorCode::UnionTooComplex => "TS2590",
             ErrorCode::JsxElementIsNotCallable => "TS2604",
+            ErrorCode::InvalidJsxConfigurationUmd => "TS2686",
             ErrorCode::Unsupported(_) => {
                 // This will return a static string for known codes, but for unsupported codes,
                 // we return a dynamically allocated string. To keep the return type consistent,
