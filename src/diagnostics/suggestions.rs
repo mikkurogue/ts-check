@@ -86,9 +86,27 @@ impl ErrorDiagnostic for ErrorCode {
             ErrorCode::DuplicateFunctionDeclaration => suggest_duplicate_fn_decl(err, tokens),
             ErrorCode::InvalidOperatorUsage => suggest_invaid_operator_usage(err),
             ErrorCode::UnionTooComplex => suggest_union_too_complex(),
+            ErrorCode::JsxElementIsNotCallable => suggest_jsx_element_not_a_fn(err),
             ErrorCode::Unsupported(_) => None,
         }
     }
+}
+
+/// Suggestion for when using a JSX element as a function but this has no callable signature
+fn suggest_jsx_element_not_a_fn(err: &TsError) -> Option<Suggestion> {
+    let jsx_element = extract_first_quoted(&err.message)?;
+
+    Some(Suggestion {
+        suggestions: vec![format!(
+            "`{}`` is not a valid function.",
+            jsx_element.red().bold()
+        )],
+        help:        Some(format!(
+            "Ensure that `{}` has a valid and callable signature.",
+            jsx_element.red().bold()
+        )),
+        span:        None,
+    })
 }
 
 /// Suggestion for when a union is too complex

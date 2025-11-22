@@ -66,6 +66,7 @@ pub enum ErrorCode {
     JsxFlagNotProvided,
     MissingJsxIntrinsicElementsDeclaration,
     JsxModuleNotSet,
+    JsxElementIsNotCallable,
 
     /// Catch-all for unsupported error codes
     Unsupported(u16),
@@ -126,6 +127,7 @@ impl ErrorCode {
             "TS2393" => ErrorCode::DuplicateFunctionDeclaration,
             "TS2365" => ErrorCode::InvalidOperatorUsage,
             "TS2590" => ErrorCode::UnionTooComplex,
+            "TS2604" => ErrorCode::JsxElementIsNotCallable,
 
             other => {
                 if let Some(num_str) = other.strip_prefix("TS")
@@ -192,6 +194,7 @@ impl ErrorCode {
             ErrorCode::DuplicateFunctionDeclaration => "TS2393",
             ErrorCode::InvalidOperatorUsage => "TS2365",
             ErrorCode::UnionTooComplex => "TS2590",
+            ErrorCode::JsxElementIsNotCallable => "TS2604",
             ErrorCode::Unsupported(_) => {
                 // This will return a static string for known codes, but for unsupported codes,
                 // we return a dynamically allocated string. To keep the return type consistent,
