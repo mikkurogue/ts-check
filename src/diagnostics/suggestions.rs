@@ -79,11 +79,32 @@ impl ErrorDiagnostic for ErrorCode {
             }
             ErrorCode::ConstEnumsDisallowed => suggest_const_enums_disallowed(),
             ErrorCode::JsxModuleNotSet => suggest_jsx_not_set(err),
+            ErrorCode::UnexpectedKeywordOrIdentifier => {
+                suggest_unexpected_kw_or_identifier(err, tokens)
+            }
             ErrorCode::Unsupported(_) => None,
         }
     }
 }
 
+/// Suggestion for unexpected keyword or identifier
+fn suggest_unexpected_kw_or_identifier(err: &TsError, tokens: &[Token]) -> Option<Suggestion> {
+    let keyword = find_token_at_position(tokens, err.line, err.column)?;
+
+    Some(Suggestion {
+        suggestions: vec![format!(
+            "{} `{}` is not expected in this context.",
+            "[FATAL]".bright_red().bold().italic(),
+            keyword.raw.bright_yellow().bold()
+        )],
+        help:        Some(
+            "Avoid using unknown, undeclared or invalid keywords or identifiers.".to_string(),
+        ),
+        span:        None,
+    })
+}
+
+/// Suggestion for when jsx compiler flag is not set but jsx is used
 fn suggest_jsx_not_set(err: &TsError) -> Option<Suggestion> {
     let module_name = extract_first_quoted(&err.message)?;
     let resolved_name = extract_second_quoted(&err.message)?;

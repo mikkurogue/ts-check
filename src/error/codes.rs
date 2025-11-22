@@ -24,6 +24,7 @@ pub enum ErrorCode {
     ExpressionExpected,
     DisallowedTrailingComma,
     SpreadParameterMustBeLast,
+    UnexpectedKeywordOrIdentifier,
 
     // Module/import errors (TS23xx, TS6xxx)
     NonExistentModuleImport,
@@ -65,6 +66,7 @@ pub enum ErrorCode {
     /// Catch-all for unsupported error codes
     Unsupported(u16),
 }
+
 impl ErrorCode {
     /// Create an `ErrorCode` from a string represenatation like "TS2322"
     pub fn from_str(code: &str) -> Self {
@@ -115,6 +117,7 @@ impl ErrorCode {
             "TS7026" => ErrorCode::MissingJsxIntrinsicElementsDeclaration,
             "TS6244" => ErrorCode::ConstEnumsDisallowed,
             "TS6142" => ErrorCode::JsxModuleNotSet,
+            "TS1434" => ErrorCode::UnexpectedKeywordOrIdentifier,
 
             other => {
                 if let Some(num_str) = other.strip_prefix("TS")
@@ -176,6 +179,7 @@ impl ErrorCode {
             ErrorCode::MissingJsxIntrinsicElementsDeclaration => "TS7026",
             ErrorCode::ConstEnumsDisallowed => "TS6244",
             ErrorCode::JsxModuleNotSet => "TS6142",
+            ErrorCode::UnexpectedKeywordOrIdentifier => "TS1434",
             ErrorCode::Unsupported(_) => {
                 // This will return a static string for known codes, but for unsupported codes,
                 // we return a dynamically allocated string. To keep the return type consistent,
