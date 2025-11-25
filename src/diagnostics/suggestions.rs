@@ -273,7 +273,7 @@ fn suggest_const_enums_disallowed() -> Option<Suggestion> {
 }
 
 /// Suggestion for missing JSX intrinsic elements declaration
-/// explained here https://www.totaltypescript.com/what-is-jsx-intrinsicelements
+/// explained here <https://www.totaltypescript.com/what-is-jsx-intrinsicelements>
 fn suggest_missing_jsx_intrinsic_elements_declaration() -> Option<Suggestion> {
     Some(Suggestion {
         suggestions: vec![
